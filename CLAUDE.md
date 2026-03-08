@@ -9,6 +9,7 @@ npm install                  # Install dependencies
 npm run build                # Production build (minified)
 npm run devbuild             # Development build
 npm run watch                # Watch mode for development
+npm run electron:start       # Launch Electron desktop app
 ```
 
 If you encounter `Error: error:0308010C:digital envelope routines::unsupported`, run first:
@@ -26,6 +27,9 @@ Build output goes to `dist/`:
 There is no automated test suite. Testing is done by opening HTML files in a browser:
 - `test/simple.html` — loads from `dist/` (production)
 - `test/simple_dev.html` — loads source files directly (development, no build needed)
+- `test/simple_v2.html` — entry point used by the Electron app
+- `test/simple_prod.html` — production variant
+- `test/minimal_skulpt.html` — minimal test for Skulpt parser only
 
 ## Architecture Overview
 
@@ -33,7 +37,7 @@ BlockMirror is a dual block/text Python editor that synchronizes [Blockly](https
 
 ### Core Components
 
-**`src/block_mirror.js`** — Top-level controller. Owns the canonical code model (`block_mirror.code_`) and coordinates between the two editors. Key config options: `container`, `viewMode` (`'split'`/`'block'`/`'text'`), `height`, `readOnly`, `blockDelay`.
+**`src/block_mirror.js`** — Top-level controller. Owns the canonical code model (`block_mirror.code_`) and coordinates between the two editors. Key config options: `container`, `viewMode` (`'split'`/`'block'`/`'text'`), `height`, `readOnly`, `blockDelay`, `renderer` (Blockly renderer, default `'Thrasos'`), `skipSkulpt`, `toolbox` (`'normal'`/`'basic'`/`'advanced'`/`'complete'`), `imageMode`.
 
 **`src/text_editor.js`** — CodeMirror-based text editor. When the user edits text, it calls into `TextToBlocks` to update the block view.
 
@@ -49,15 +53,18 @@ BlockMirror is a dual block/text Python editor that synchronizes [Blockly](https
 
 **`src/blockly_shims.js`** — Patches and extensions to Blockly before it is used.
 
+**`electron/main.js`** — Electron entry point; loads `test/simple_v2.html` in a BrowserWindow.
+
 ### Sync / Loop-prevention
 
 To prevent update cycles between the two editors, the main controller uses two boolean flags: `silenceText` (suppress text→block propagation) and `silenceBlock` (suppress block→text propagation). The `blockDelay` option adds a debounce for expensive block renders on large files.
 
 ### Block Color Conventions
 
-Each category uses a fixed Blockly hue:
+Colors are referenced via `BlockMirrorTextToBlocks.COLOR.*` constants:
 - Variables: 225 | Functions: 210 | Control flow: 270
 - Math: 150 | Text/Strings: 120 | Logic: 345 | Sequences: 15
+- Dictionary: 0 | OO (object-oriented): 240 | Python builtins: 60 | File I/O: 180
 
 ## Adding a New AST Node
 
@@ -84,9 +91,21 @@ BlockMirrorTextToBlocks.prototype['ast_XXX'] = function(node, parent) {
 
 After creating the file, **register it in `webpack.config.js`** by adding it to `JS_BLOCKMIRROR_FILES` (the ordered list under `// AST Handlers`). Also add a `<script>` tag in the test HTML files if you want to test without a full build.
 
+Note: `src/ast/ast_Nonlocal.js` exists but is intentionally excluded from the webpack build.
+
 ## Adding Built-in Functions
 
-Built-in Python functions (e.g. `print`, `range`, `len`) are defined in `src/ast/ast_functions.js` as entries in `BlockMirrorTextToBlocks.FUNCTION_SIGNATURES`. Each entry specifies the function name, return type, and parameter list so that the call block renders correctly.
+Built-in Python functions (e.g. `print`, `range`, `len`) are defined in `src/ast/ast_functions.js` as entries in `BlockMirrorTextToBlocks.FUNCTION_SIGNATURES`. Each entry supports these fields:
+
+```javascript
+'funcName': {
+    returns: true,          // whether the function returns a value (affects block shape)
+    colour: BlockMirrorTextToBlocks.COLOR.MATH,  // block color
+    simple: ['x'],          // parameters shown by default
+    full: ['x', 'base'],    // all parameters (shown in expanded mode)
+    custom: function(node, parent, bmttb) { ... }  // override handler for AST→block conversion
+}
+```
 
 ## Skulpt Fork
 
