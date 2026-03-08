@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // 窗口控制
     setWindowTitle: (title) => ipcRenderer.send('window:setTitle', title),
     forceClose: () => ipcRenderer.send('window:forceClose'),
+    openBlockFactory: () => ipcRenderer.send('blockfactory:open'),
 
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {

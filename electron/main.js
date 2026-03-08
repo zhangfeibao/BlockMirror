@@ -6,6 +6,7 @@ const { spawn } = require('child_process');
 let mainWindow = null;
 let pythonProcess = null;
 let shellProcess = null;
+let blockFactoryWindow = null;
 
 function sendToRenderer(channel, data) {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -147,6 +148,33 @@ ipcMain.on('window:forceClose', () => {
     }
 });
 
+// 自定义积木块窗口
+ipcMain.on('blockfactory:open', () => {
+    if (blockFactoryWindow && !blockFactoryWindow.isDestroyed()) {
+        blockFactoryWindow.focus();
+        return;
+    }
+    blockFactoryWindow = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        title: '自定义积木块 - BlockMirror',
+        autoHideMenuBar: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+        },
+    });
+    blockFactoryWindow.setMenu(null);
+    blockFactoryWindow.loadFile(path.join(__dirname, '..', 'blockfactory', 'index.html'));
+    // blockfactory 页面注册了 beforeunload 拦截，忽略它以允许直接关闭
+    blockFactoryWindow.webContents.on('will-prevent-unload', (event) => {
+        event.preventDefault();
+    });
+    blockFactoryWindow.on('closed', () => {
+        blockFactoryWindow = null;
+    });
+});
+
 // 窗口创建：注册 preload
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -218,6 +246,12 @@ function buildAppMenu() {
                 { label: '切换终端', click: () => sendToRenderer('menu:command', 'view:toggleTerminal') },
                 { type: 'separator' },
                 { label: '开发者工具', accelerator: 'F12', click: () => { if (mainWindow) mainWindow.webContents.toggleDevTools(); } },
+            ],
+        },
+        {
+            label: '工具(&T)',
+            submenu: [
+                { label: '自定义积木块...', click: () => sendToRenderer('menu:command', 'tools:blockFactory') },
             ],
         },
         {

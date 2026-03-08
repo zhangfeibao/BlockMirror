@@ -263,6 +263,35 @@
             border-right: 1px solid #e2e8f0;
         }
 
+        #blockfactory-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: transparent;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+
+        #blockfactory-btn:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+
+        #blockfactory-btn svg {
+            width: 14px;
+            height: 14px;
+            flex-shrink: 0;
+        }
+
         #file-name {
             display: none;
             font-size: 12px;
@@ -331,6 +360,12 @@
             <polygon points="4,2 14,8 4,14"/>
         </svg>
         <span id="run-label">运行</span>
+    </button>
+    <button id="blockfactory-btn" title="打开自定义积木块编辑器" onclick="openBlockFactory()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M6 2H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h.5v1H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-.5h1V11a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-.5V7H11a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v.5H7V3a1 1 0 0 0-1-1z"/>
+        </svg>
+        自定义积木块
     </button>
 </div>
 
@@ -726,6 +761,12 @@
         });
     }
 
+    // ── 自定义积木块窗口 ──
+    function openBlockFactory() {
+        if (!window.electronAPI) { alert('此功能仅在 Electron 中可用'); return; }
+        window.electronAPI.openBlockFactory();
+    }
+
     // ── 菜单命令分发器 ──
     function initMenuCommands() {
         if (!window.electronAPI) return;
@@ -733,8 +774,10 @@
         // 显示文件操作按钮和文件名
         var fileActions = document.getElementById('file-actions');
         var fileName = document.getElementById('file-name');
+        var blockfactoryBtn = document.getElementById('blockfactory-btn');
         if (fileActions) fileActions.style.display = 'flex';
         if (fileName) fileName.style.display = 'block';
+        if (blockfactoryBtn) blockfactoryBtn.style.display = 'flex';
 
         // 监听菜单命令
         window.electronAPI.onMenuCommand(function(command) {
@@ -749,6 +792,7 @@
                 case 'view:split':      setMode('split'); break;
                 case 'view:text':       setMode('text'); break;
                 case 'view:toggleTerminal': toggleTerminal(); break;
+                case 'tools:blockFactory': openBlockFactory(); break;
             }
         });
     }
