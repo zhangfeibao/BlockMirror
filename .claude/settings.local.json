@@ -3,7 +3,12 @@
     "allow": [
       "Bash(wc:*)",
       "Bash(sort:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(ls:*)",
+      "Bash(echo no python:*)",
+      "Bash(echo python not in PATH:*)",
+      "Bash(cd /e/github-ws/BlockMirror && npm install @xterm/xterm @xterm/addon-fit 2>&1)",
+      "Bash(true:*)"
     ]
   }
 }
