@@ -22,6 +22,8 @@ Build output goes to `dist/`:
 - `dist/skulpt_parser.js` — bundled Skulpt Python parser
 - `dist/block_mirror.css` — styles
 
+No linting or formatting tools are configured. The only config file is `.babelrc` (`@babel/preset-env`).
+
 ## Testing
 
 There is no automated test suite. Testing is done by opening HTML files in a browser:
@@ -53,6 +55,8 @@ BlockMirror is a dual block/text Python editor that synchronizes [Blockly](https
 
 **`src/blockly_shims.js`** — Patches and extensions to Blockly before it is used.
 
+Note: `src/main.js` is the webpack entry point but contains only comments — the actual file concatenation is handled by `webpack-merge-and-include-globally` plugin in `webpack.config.js`.
+
 ### Sync / Loop-prevention
 
 To prevent update cycles between the two editors, the main controller uses two boolean flags: `silenceText` (suppress text→block propagation) and `silenceBlock` (suppress block→text propagation). The `blockDelay` option adds a debounce for expensive block renders on large files.
@@ -72,25 +76,28 @@ The Electron app (`npm run electron:start`) adds Python code execution and an in
 Renderer Process (test/simple_v2.html)
   ├── BlockMirror editor (Blockly + CodeMirror)
   ├── xterm.js terminal panel (resizable, draggable)
-  ├── Run/Stop button → editor.getCode() → electronAPI.runPython()
+  ├── Run/Stop button → editor.getCode() → electronAPI.runPython(filePath)
   └── window.electronAPI  ← exposed via contextBridge
          ↕ IPC (contextIsolation: true)
 Main Process (electron/main.js)
-  ├── python:run  → spawn('python', ['-u', '-c', code])
+  ├── python:run  → spawn('python', ['-u', filePath], {cwd: dirname(filePath)})
   ├── python:kill → taskkill (Win32) / SIGTERM
   ├── shell:start → spawn('powershell.exe' / 'bash')
   ├── file:open/save/saveAs/exportPng/confirmSave → dialog + fs
   ├── window:setTitle / window:forceClose → BrowserWindow control
-  └── blockfactory:open → opens blockfactory/ in a new BrowserWindow
+  ├── blockfactory:open → opens blockfactory/ in a new BrowserWindow
+  └── custom-modules:* → Custom modules CRUD + manager window
 ```
 
-**`electron/main.js`** — Main process. Manages `pythonProcess`, `shellProcess`, and `blockFactoryWindow`. Streams stdout/stderr via `terminal:output` IPC. Menu items send `menu:command` events to the renderer; the renderer's `initMenuCommands()` dispatches them to handler functions.
+**`electron/main.js`** — Main process. Manages `pythonProcess`, `shellProcess`, `blockFactoryWindow`, `moduleManagerWindow`, and `customModulesStore`. Streams stdout/stderr via `terminal:output` IPC. Menu items send `menu:command` events to the renderer; the renderer's `initMenuCommands()` dispatches them to handler functions.
 
-**`electron/preload.js`** — Bridges main ↔ renderer via `contextBridge.exposeInMainWorld('electronAPI', ...)`. IPC channels:
+**`electron/preload.js`** — Bridges main ↔ renderer via `contextBridge.exposeInMainWorld('electronAPI', ...)`. All `on*` listener methods return a cleanup/unsubscribe function.
+
+### IPC Channels
 
 | Direction | Channel | Purpose |
 |-----------|---------|---------|
-| renderer → main (invoke) | `python:run` | Execute Python code string |
+| renderer → main (invoke) | `python:run` | Execute Python file at path (cwd = file's directory) |
 | renderer → main (invoke) | `python:kill` | Kill running Python process |
 | renderer → main (invoke) | `shell:start` | Start persistent shell |
 | renderer → main (send) | `shell:write` | Send keystrokes to shell stdin |
@@ -103,10 +110,26 @@ Main Process (electron/main.js)
 | renderer → main (send) | `window:setTitle` | Set main window title string |
 | renderer → main (send) | `window:forceClose` | Close window bypassing `close` listener |
 | renderer → main (send) | `blockfactory:open` | Open/focus custom blocks editor window |
+| renderer → main (send) | `custom-modules:openManager` | Open/focus module manager window |
+| renderer → main (invoke) | `custom-modules:getAll` | Get all custom modules data |
+| renderer → main (invoke) | `custom-modules:createModule` | Create a new module |
+| renderer → main (invoke) | `custom-modules:updateModule` | Update module properties |
+| renderer → main (invoke) | `custom-modules:deleteModule` | Delete a module |
+| renderer → main (invoke) | `custom-modules:createFunction` | Add function to a module |
+| renderer → main (invoke) | `custom-modules:updateFunction` | Update function properties |
+| renderer → main (invoke) | `custom-modules:deleteFunction` | Remove function from a module |
+| renderer → main (invoke) | `custom-modules:export` | Export module(s) to JSON file |
+| renderer → main (invoke) | `custom-modules:import` | Import modules from JSON file |
+| renderer → main (send) | `custom-modules:changed` | Notify main window to reload modules |
 | main → renderer | `terminal:output` | Streamed stdout/stderr text |
 | main → renderer | `process:exit` | Process exit with `{exitCode, source}` |
 | main → renderer | `process:start` | Process started with `{source}` |
-| main → renderer | `menu:command` | Native menu item clicked (e.g. `'file:new'`, `'view:split'`, `'tools:blockFactory'`) |
+| main → renderer | `menu:command` | Native menu item clicked (e.g. `'file:new'`, `'view:split'`, `'tools:moduleManager'`) |
+| main → renderer | `custom-modules:reload` | Push updated modules data to renderer |
+
+### Python Execution
+
+Python code is executed by saving to a temp file (or using the current file path) and running `spawn('python', ['-u', filePath], { cwd: dirname(filePath) })`. The working directory is set to the file's parent directory so relative imports and file paths work correctly. Stderr output is wrapped in ANSI red escape codes for terminal display.
 
 ### Terminal Shell Interaction (no PTY)
 
@@ -128,6 +151,40 @@ The toolbar buttons in `simple_v2.html` call the same handler functions directly
 ### BlockFactory Window
 
 `blockfactory/` is a self-contained copy of Google's Blockly Developer Tools for creating custom block definitions. It is opened as a child `BrowserWindow` (no menu bar, `setMenu(null)`) via the `blockfactory:open` IPC channel. The window carries its own copies of Blockly in `blockfactory/dist/` and `blockfactory/build/`. Its `beforeunload` hook is suppressed via `webContents.on('will-prevent-unload', e => e.preventDefault())` so the close button works normally.
+
+### Custom Modules Management System
+
+The custom modules system allows users to define their own Python module/function blocks without writing code. It consists of three layers:
+
+**`electron/custom-modules-store.js`** — Persistent storage. Saves to `app.getPath('userData')/custom-modules.json`. Supports CRUD for modules and functions, import/export to JSON, and atomic file writes (write-to-tmp-then-rename). Corrupted data files are automatically backed up before reset.
+
+**`custom-modules/manager.html` + `manager-preload.js`** — A separate BrowserWindow with a three-column UI (module list → function list → property editor). Opened via `custom-modules:openManager` IPC. Uses its own preload script exposing `moduleManagerAPI`.
+
+**Renderer integration (in `simple_v2.html`)** — `loadCustomModules(data)` registers custom functions into `BlockMirrorTextToBlocks.FUNCTION_SIGNATURES` (for standalone functions) and `BlockMirrorTextToBlocks.MODULE_FUNCTION_SIGNATURES` (for module-prefixed functions like `module.func()`), generates toolbox XML into `BlockMirrorBlockEditor.EXTRA_TOOLS`, then calls `remakeToolbox()` and `forceBlockRefresh()`.
+
+Data model:
+```javascript
+Module: {
+    id: 'mod_TIMESTAMP_RANDOM',
+    name: string,
+    colour: number,        // HSV hue 0-360
+    description: string,
+    functions: [Function]
+}
+Function: {
+    id: 'fn_TIMESTAMP_RANDOM',
+    name: string,          // Python identifier (e.g. 'my_func')
+    displayName: string,   // Block display text
+    returns: boolean,      // Affects block shape (expression vs statement)
+    colour: number,        // HSV hue 0-360
+    params: string[],      // Default parameters shown
+    fullParams: string[],  // All parameters (expanded mode)
+    module: string,        // Optional module prefix (e.g. 'turtle')
+    toolboxSnippet: string
+}
+```
+
+Lifecycle: app starts → `CustomModulesStore` loads from disk → `did-finish-load` sends `custom-modules:reload` to renderer → `loadCustomModules()` registers blocks → user edits in manager window → `custom-modules:changed` triggers reload in main window.
 
 ### BlockMirror Height Sync (`syncEditorHeight`)
 
@@ -188,6 +245,8 @@ Built-in Python functions (e.g. `print`, `range`, `len`) are defined in `src/ast
     custom: function(node, parent, bmttb) { ... }  // override handler for AST→block conversion
 }
 ```
+
+Module-prefixed functions (e.g. `turtle.forward()`) use `BlockMirrorTextToBlocks.MODULE_FUNCTION_SIGNATURES` with the same structure, keyed by `'module.funcName'`.
 
 ## Skulpt Fork
 
