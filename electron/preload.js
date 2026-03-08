@@ -22,6 +22,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
     forceClose: () => ipcRenderer.send('window:forceClose'),
     openBlockFactory: () => ipcRenderer.send('blockfactory:open'),
 
+    // 自定义模块管理
+    openModuleManager: () => ipcRenderer.send('custom-modules:openManager'),
+    getCustomModules: () => ipcRenderer.invoke('custom-modules:getAll'),
+    onCustomModulesReload: (callback) => {
+        const fn = (_, modules) => callback(modules);
+        ipcRenderer.on('custom-modules:reload', fn);
+        return () => ipcRenderer.removeListener('custom-modules:reload', fn);
+    },
+
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {
         const fn = (_, data) => callback(data);

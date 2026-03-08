@@ -263,7 +263,8 @@
             border-right: 1px solid #e2e8f0;
         }
 
-        #blockfactory-btn {
+        #blockfactory-btn,
+        #module-manager-btn {
             display: none;
             align-items: center;
             gap: 6px;
@@ -280,13 +281,15 @@
             font-family: inherit;
         }
 
-        #blockfactory-btn:hover {
+        #blockfactory-btn:hover,
+        #module-manager-btn:hover {
             background: #f1f5f9;
             color: #334155;
             border-color: #cbd5e1;
         }
 
-        #blockfactory-btn svg {
+        #blockfactory-btn svg,
+        #module-manager-btn svg {
             width: 14px;
             height: 14px;
             flex-shrink: 0;
@@ -366,6 +369,15 @@
             <path d="M6 2H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h.5v1H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-.5h1V11a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1h-.5V7H11a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v.5H7V3a1 1 0 0 0-1-1z"/>
         </svg>
         自定义积木块
+    </button>
+    <button id="module-manager-btn" title="自定义模块管理" onclick="openModuleManager()" style="display:none;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="1" y="2" width="14" height="12" rx="1.5"/>
+            <line x1="5.5" y1="2" x2="5.5" y2="14"/>
+            <line x1="1" y1="6" x2="14" y2="6"/>
+            <line x1="1" y1="10" x2="14" y2="10"/>
+        </svg>
+        模块管理
     </button>
 </div>
 
@@ -767,6 +779,83 @@
         window.electronAPI.openBlockFactory();
     }
 
+    // ── 自定义模块管理 ──
+    function openModuleManager() {
+        if (!window.electronAPI) { alert('此功能仅在 Electron 中可用'); return; }
+        window.electronAPI.openModuleManager();
+    }
+
+    var loadedCustomFunctions = {};
+    var loadedCustomModuleKeys = {};
+
+    function loadCustomModules(data) {
+        unloadCustomModules();
+        var modules = data.modules || data;
+        if (!Array.isArray(modules)) return;
+        modules.forEach(function(mod) {
+            if (!mod.functions) return;
+            mod.functions.forEach(function(fn) {
+                var signature = {
+                    returns: fn.returns,
+                    colour: fn.colour || mod.colour
+                };
+                if (fn.displayName) signature.message = fn.displayName;
+                if (fn.params && fn.params.length > 0) signature.simple = fn.params;
+                if (fn.fullParams && fn.fullParams.length > 0) signature.full = fn.fullParams;
+
+                if (fn.module) {
+                    // 模块函数：注册到 MODULE_FUNCTION_SIGNATURES
+                    if (!BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES[fn.module]) {
+                        BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES[fn.module] = {};
+                    }
+                    BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES[fn.module][fn.name] = signature;
+                    if (!loadedCustomModuleKeys[fn.module]) loadedCustomModuleKeys[fn.module] = [];
+                    loadedCustomModuleKeys[fn.module].push(fn.name);
+                } else {
+                    // 全局函数：注册到 FUNCTION_SIGNATURES
+                    BlockMirrorTextToBlocks.prototype.FUNCTION_SIGNATURES[fn.name] = signature;
+                    loadedCustomFunctions[fn.name] = true;
+                }
+            });
+        });
+
+        // 生成 EXTRA_TOOLS 工具栏 XML
+        modules.forEach(function(mod) {
+            if (!mod.functions || mod.functions.length === 0) return;
+            var xml = '<category name="' + escapeXml(mod.name) + '" colour="' + mod.colour + '">';
+            mod.functions.forEach(function(fn) {
+                xml += BlockMirrorTextToBlocks.getFunctionBlock(fn.name, {}, fn.module || undefined);
+            });
+            xml += '</category>';
+            BlockMirrorBlockEditor.EXTRA_TOOLS['custom_' + mod.id] = xml;
+        });
+
+        editor.blockEditor.remakeToolbox();
+        editor.forceBlockRefresh();
+    }
+
+    function unloadCustomModules() {
+        for (var name in loadedCustomFunctions) {
+            delete BlockMirrorTextToBlocks.prototype.FUNCTION_SIGNATURES[name];
+        }
+        loadedCustomFunctions = {};
+        for (var mod in loadedCustomModuleKeys) {
+            loadedCustomModuleKeys[mod].forEach(function(fn) {
+                if (BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES[mod]) {
+                    delete BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES[mod][fn];
+                }
+            });
+        }
+        loadedCustomModuleKeys = {};
+        for (var key in BlockMirrorBlockEditor.EXTRA_TOOLS) {
+            if (key.indexOf('custom_') === 0) delete BlockMirrorBlockEditor.EXTRA_TOOLS[key];
+        }
+    }
+
+    function escapeXml(s) {
+        return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
     // ── 菜单命令分发器 ──
     function initMenuCommands() {
         if (!window.electronAPI) return;
@@ -775,9 +864,11 @@
         var fileActions = document.getElementById('file-actions');
         var fileName = document.getElementById('file-name');
         var blockfactoryBtn = document.getElementById('blockfactory-btn');
+        var moduleManagerBtn = document.getElementById('module-manager-btn');
         if (fileActions) fileActions.style.display = 'flex';
         if (fileName) fileName.style.display = 'block';
         if (blockfactoryBtn) blockfactoryBtn.style.display = 'flex';
+        if (moduleManagerBtn) moduleManagerBtn.style.display = 'flex';
 
         // 监听菜单命令
         window.electronAPI.onMenuCommand(function(command) {
@@ -793,6 +884,19 @@
                 case 'view:text':       setMode('text'); break;
                 case 'view:toggleTerminal': toggleTerminal(); break;
                 case 'tools:blockFactory': openBlockFactory(); break;
+                case 'tools:moduleManager': openModuleManager(); break;
+            }
+        });
+
+        // 监听自定义模块数据更新
+        window.electronAPI.onCustomModulesReload(function(data) {
+            loadCustomModules(data);
+        });
+
+        // 启动时加载已有的自定义模块
+        window.electronAPI.getCustomModules().then(function(data) {
+            if (data && data.modules && data.modules.length > 0) {
+                loadCustomModules(data);
             }
         });
     }

@@ -415,7 +415,7 @@ Blockly.Blocks['ast_Call'] = {
 
 python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
     // TODO: Handle import
-    if (block.module_) {
+    if (block.module_ && BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[block.module_]) {
         python.pythonGenerator.definitions_["import_"+block.module_] = BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[block.module_];
     }
     // python.pythonGenerator.definitions_['import_matplotlib'] = 'import matplotlib.pyplot as plt';

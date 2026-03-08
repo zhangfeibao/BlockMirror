@@ -2,11 +2,14 @@ const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
+const { CustomModulesStore } = require('./custom-modules-store');
 
 let mainWindow = null;
 let pythonProcess = null;
 let shellProcess = null;
 let blockFactoryWindow = null;
+let moduleManagerWindow = null;
+let customModulesStore = null;
 
 function sendToRenderer(channel, data) {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -175,6 +178,89 @@ ipcMain.on('blockfactory:open', () => {
     });
 });
 
+// ── 自定义模块管理 IPC ──
+ipcMain.on('custom-modules:openManager', () => {
+    if (moduleManagerWindow && !moduleManagerWindow.isDestroyed()) {
+        moduleManagerWindow.focus();
+        return;
+    }
+    moduleManagerWindow = new BrowserWindow({
+        width: 960,
+        height: 640,
+        title: '自定义模块管理 - BlockMirror',
+        autoHideMenuBar: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, '..', 'custom-modules', 'manager-preload.js'),
+        },
+    });
+    moduleManagerWindow.setMenu(null);
+    moduleManagerWindow.loadFile(path.join(__dirname, '..', 'custom-modules', 'manager.html'));
+    moduleManagerWindow.on('closed', () => {
+        moduleManagerWindow = null;
+    });
+});
+
+ipcMain.handle('custom-modules:getAll', async () => {
+    return customModulesStore.getAll();
+});
+
+ipcMain.handle('custom-modules:createModule', async (_, data) => {
+    return customModulesStore.createModule(data);
+});
+
+ipcMain.handle('custom-modules:updateModule', async (_, { id, data }) => {
+    return customModulesStore.updateModule(id, data);
+});
+
+ipcMain.handle('custom-modules:deleteModule', async (_, id) => {
+    return customModulesStore.deleteModule(id);
+});
+
+ipcMain.handle('custom-modules:createFunction', async (_, { moduleId, fnData }) => {
+    return customModulesStore.createFunction(moduleId, fnData);
+});
+
+ipcMain.handle('custom-modules:updateFunction', async (_, { moduleId, fnId, fnData }) => {
+    return customModulesStore.updateFunction(moduleId, fnId, fnData);
+});
+
+ipcMain.handle('custom-modules:deleteFunction', async (_, { moduleId, fnId }) => {
+    return customModulesStore.deleteFunction(moduleId, fnId);
+});
+
+ipcMain.handle('custom-modules:export', async (_, moduleId) => {
+    const result = await dialog.showSaveDialog(moduleManagerWindow || mainWindow, {
+        filters: [{ name: 'JSON 文件', extensions: ['json'] }],
+        defaultPath: 'custom-modules.json',
+    });
+    if (result.canceled) return { canceled: true };
+    customModulesStore.exportToFile(result.filePath, moduleId || null);
+    return { canceled: false, filePath: result.filePath };
+});
+
+ipcMain.handle('custom-modules:import', async () => {
+    const result = await dialog.showOpenDialog(moduleManagerWindow || mainWindow, {
+        filters: [{ name: 'JSON 文件', extensions: ['json'] }],
+        properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    try {
+        const imported = customModulesStore.importFromFile(result.filePaths[0]);
+        return { canceled: false, modules: imported };
+    } catch (err) {
+        return { canceled: false, error: err.message };
+    }
+});
+
+ipcMain.on('custom-modules:changed', () => {
+    // 重新读取最新数据并推送到主窗口
+    customModulesStore.load();
+    const modules = customModulesStore.getAll();
+    sendToRenderer('custom-modules:reload', modules);
+});
+
 // 窗口创建：注册 preload
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -189,6 +275,14 @@ function createWindow() {
     });
 
     mainWindow.loadFile(path.join(__dirname, '..', 'test', 'simple_v2.html'));
+
+    // 页面加载完成后推送自定义模块数据
+    mainWindow.webContents.on('did-finish-load', () => {
+        if (customModulesStore) {
+            const modules = customModulesStore.getAll();
+            sendToRenderer('custom-modules:reload', modules);
+        }
+    });
 
     // 开发时可取消注释以打开 DevTools
     // mainWindow.webContents.openDevTools();
@@ -252,6 +346,7 @@ function buildAppMenu() {
             label: '工具(&T)',
             submenu: [
                 { label: '自定义积木块...', click: () => sendToRenderer('menu:command', 'tools:blockFactory') },
+                { label: '自定义模块管理...', click: () => sendToRenderer('menu:command', 'tools:moduleManager') },
             ],
         },
         {
@@ -275,6 +370,7 @@ function buildAppMenu() {
 }
 
 app.whenReady().then(() => {
+    customModulesStore = new CustomModulesStore(app.getPath('userData'));
     buildAppMenu();
     createWindow();
 

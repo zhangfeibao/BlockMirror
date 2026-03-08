@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>自定义模块管理 - BlockMirror</title>
+    <link rel="stylesheet" href="manager.css">
+</head>
+<body>
+
+<!-- 顶部工具栏 -->
+<div id="manager-toolbar">
+    <span class="toolbar-title">自定义模块管理</span>
+    <button class="toolbar-action-btn" onclick="importModules()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3"/>
+            <polyline points="5,6 8,3 11,6"/>
+            <line x1="8" y1="3" x2="8" y2="11"/>
+        </svg>
+        导入
+    </button>
+    <button class="toolbar-action-btn" onclick="exportModules()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 10v3a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-3"/>
+            <polyline points="5,7 8,10 11,7"/>
+            <line x1="8" y1="10" x2="8" y2="2"/>
+        </svg>
+        导出
+    </button>
+    <button class="toolbar-action-btn primary" onclick="showCreateModuleDialog()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="8" y1="3" x2="8" y2="13"/>
+            <line x1="3" y1="8" x2="13" y2="8"/>
+        </svg>
+        新建模块
+    </button>
+</div>
+
+<!-- 三栏主体 -->
+<div id="manager-body">
+    <!-- 左栏：模块列表 -->
+    <div id="module-list-panel">
+        <div class="panel-header">模块</div>
+        <div id="module-list">
+            <div class="empty-state" id="module-empty">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2">
+                    <rect x="1" y="2" width="14" height="12" rx="1.5"/>
+                    <line x1="5.5" y1="2" x2="5.5" y2="14"/>
+                </svg>
+                <span>暂无模块<br>点击"新建模块"开始</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 中栏：函数列表 -->
+    <div id="function-list-panel">
+        <div class="panel-header">
+            <span>函数</span>
+        </div>
+        <div id="function-list">
+            <div class="empty-state" id="function-empty">
+                <span>选择一个模块</span>
+            </div>
+        </div>
+        <div id="function-list-footer" style="display:none;">
+            <button class="toolbar-action-btn" style="width:100%;justify-content:center;" onclick="createFunction()">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="8" y1="4" x2="8" y2="12"/>
+                    <line x1="4" y1="8" x2="12" y2="8"/>
+                </svg>
+                添加函数
+            </button>
+        </div>
+    </div>
+
+    <!-- 右栏：编辑面板 -->
+    <div id="edit-panel">
+        <div class="panel-header">编辑</div>
+        <div id="edit-content">
+            <div id="edit-placeholder">
+                <span>选择一个函数进行编辑</span>
+            </div>
+            <form id="edit-form" onsubmit="return saveFunction(event)">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>函数名 <span style="color:#ef4444">*</span></label>
+                        <input type="text" id="fn-name" class="mono" placeholder="例如: move_forward" required
+                               pattern="[a-zA-Z_][a-zA-Z0-9_]*" title="合法的 Python 标识符">
+                    </div>
+                    <div class="form-group">
+                        <label>显示名称</label>
+                        <input type="text" id="fn-display-name" placeholder="积木块上的文字（可选）">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>模块前缀</label>
+                        <input type="text" id="fn-module" class="mono" placeholder="例如: robot（可选）">
+                    </div>
+                    <div class="form-group" style="flex:0 0 auto;">
+                        <label>&nbsp;</label>
+                        <div class="form-checkbox">
+                            <input type="checkbox" id="fn-returns">
+                            <label for="fn-returns">有返回值</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>颜色</label>
+                    <div class="colour-slider-group">
+                        <input type="range" id="fn-colour" min="0" max="360" value="210"
+                               oninput="updateColourPreview()">
+                        <div class="colour-preview" id="fn-colour-preview"></div>
+                        <span class="colour-value" id="fn-colour-value">210</span>
+                    </div>
+                </div>
+
+                <div class="params-section">
+                    <div class="section-title">
+                        基本参数
+                        <span class="hint">默认显示的参数</span>
+                    </div>
+                    <div id="simple-params-list"></div>
+                    <button type="button" class="param-add-btn" onclick="addParam('simple')">+ 添加参数</button>
+                </div>
+
+                <div class="params-section">
+                    <div class="section-title">
+                        完整参数
+                        <span class="hint">包含可选参数（留空则与基本参数相同）</span>
+                    </div>
+                    <div id="full-params-list"></div>
+                    <button type="button" class="param-add-btn" onclick="addParam('full')">+ 添加参数</button>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-save">保存函数</button>
+                    <button type="button" class="btn btn-delete" onclick="deleteFunction()">删除函数</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 状态栏 -->
+<div id="status-bar">
+    <span id="status-text">就绪</span>
+</div>
+
+<!-- 模块编辑对话框 -->
+<div id="module-edit-overlay" onclick="if(event.target===this)closeModuleDialog()">
+    <div id="module-edit-dialog">
+        <h3 id="module-dialog-title">新建模块</h3>
+        <div class="form-group">
+            <label>模块名称 <span style="color:#ef4444">*</span></label>
+            <input type="text" id="mod-name" placeholder="例如: 机器人控制">
+        </div>
+        <div class="form-group">
+            <label>描述</label>
+            <input type="text" id="mod-description" placeholder="（可选）">
+        </div>
+        <div class="form-group">
+            <label>颜色</label>
+            <div class="colour-slider-group">
+                <input type="range" id="mod-colour" min="0" max="360" value="210"
+                       oninput="updateModColourPreview()">
+                <div class="colour-preview" id="mod-colour-preview"></div>
+                <span class="colour-value" id="mod-colour-value">210</span>
+            </div>
+        </div>
+        <div class="dialog-actions">
+            <button class="btn" onclick="closeModuleDialog()">取消</button>
+            <button class="btn btn-primary" onclick="saveModule()">确定</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ── 状态 ──
+    var allModules = [];
+    var selectedModuleId = null;
+    var selectedFnId = null;
+    var editingModuleId = null; // 用于编辑模块对话框
+
+    // ── 初始化 ──
+    window.addEventListener('load', function() {
+        loadData();
+    });
+
+    function loadData() {
+        window.moduleManagerAPI.getModules().then(function(data) {
+            allModules = (data && data.modules) ? data.modules : [];
+            renderModuleList();
+            // 恢复选中状态
+            if (selectedModuleId) {
+                var mod = allModules.find(function(m) { return m.id === selectedModuleId; });
+                if (!mod) {
+                    selectedModuleId = null;
+                    selectedFnId = null;
+                }
+            }
+            renderFunctionList();
+            renderEditPanel();
+            updateStatus();
+        });
+    }
+
+    // ── 模块列表渲染 ──
+    function renderModuleList() {
+        var container = document.getElementById('module-list');
+        var emptyEl = document.getElementById('module-empty');
+
+        // 清空旧项（保留 empty-state）
+        var items = container.querySelectorAll('.module-item');
+        items.forEach(function(el) { el.remove(); });
+
+        if (allModules.length === 0) {
+            if (emptyEl) emptyEl.style.display = '';
+            return;
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        allModules.forEach(function(mod) {
+            var div = document.createElement('div');
+            div.className = 'module-item' + (mod.id === selectedModuleId ? ' selected' : '');
+            div.onclick = function(e) {
+                if (e.target.classList.contains('module-delete-btn')) return;
+                selectModule(mod.id);
+            };
+            div.ondblclick = function() {
+                showEditModuleDialog(mod.id);
+            };
+
+            var dot = document.createElement('span');
+            dot.className = 'module-colour-dot';
+            dot.style.background = hslColour(mod.colour);
+
+            var name = document.createElement('span');
+            name.className = 'module-item-name';
+            name.textContent = mod.name;
+
+            var count = document.createElement('span');
+            count.className = 'module-item-count';
+            count.textContent = (mod.functions ? mod.functions.length : 0);
+
+            var delBtn = document.createElement('button');
+            delBtn.className = 'module-delete-btn';
+            delBtn.textContent = '\u00d7';
+            delBtn.title = '删除模块';
+            delBtn.onclick = function(e) {
+                e.stopPropagation();
+                deleteModule(mod.id);
+            };
+
+            div.appendChild(dot);
+            div.appendChild(name);
+            div.appendChild(count);
+            div.appendChild(delBtn);
+            container.appendChild(div);
+        });
+    }
+
+    function selectModule(moduleId) {
+        selectedModuleId = moduleId;
+        selectedFnId = null;
+        renderModuleList();
+        renderFunctionList();
+        renderEditPanel();
+    }
+
+    // ── 函数列表渲染 ──
+    function renderFunctionList() {
+        var container = document.getElementById('function-list');
+        var emptyEl = document.getElementById('function-empty');
+        var footer = document.getElementById('function-list-footer');
+
+        // 清空旧项
+        var items = container.querySelectorAll('.function-item');
+        items.forEach(function(el) { el.remove(); });
+
+        if (!selectedModuleId) {
+            if (emptyEl) { emptyEl.style.display = ''; emptyEl.querySelector('span').textContent = '选择一个模块'; }
+            if (footer) footer.style.display = 'none';
+            return;
+        }
+
+        var mod = allModules.find(function(m) { return m.id === selectedModuleId; });
+        if (!mod) return;
+
+        if (footer) footer.style.display = '';
+
+        if (!mod.functions || mod.functions.length === 0) {
+            if (emptyEl) { emptyEl.style.display = ''; emptyEl.querySelector('span').textContent = '暂无函数\n点击下方按钮添加'; }
+            return;
+        }
+        if (emptyEl) emptyEl.style.display = 'none';
+
+        mod.functions.forEach(function(fn) {
+            var div = document.createElement('div');
+            div.className = 'function-item' + (fn.id === selectedFnId ? ' selected' : '');
+            div.onclick = function() { selectFunction(fn.id); };
+
+            var icon = document.createElement('span');
+            icon.className = 'function-item-icon';
+            icon.textContent = fn.returns ? 'f(x)' : 'f()';
+
+            var name = document.createElement('span');
+            name.className = 'function-item-name';
+            name.textContent = fn.module ? fn.module + '.' + fn.name : fn.name;
+
+            div.appendChild(icon);
+            div.appendChild(name);
+
+            if (fn.returns) {
+                var badge = document.createElement('span');
+                badge.className = 'function-item-badge';
+                badge.textContent = '返回值';
+                div.appendChild(badge);
+            }
+
+            container.appendChild(div);
+        });
+    }
+
+    function selectFunction(fnId) {
+        selectedFnId = fnId;
+        renderFunctionList();
+        renderEditPanel();
+    }
+
+    // ── 编辑面板渲染 ──
+    function renderEditPanel() {
+        var placeholder = document.getElementById('edit-placeholder');
+        var form = document.getElementById('edit-form');
+
+        if (!selectedModuleId || !selectedFnId) {
+            placeholder.style.display = '';
+            form.style.display = 'none';
+            return;
+        }
+
+        var mod = allModules.find(function(m) { return m.id === selectedModuleId; });
+        if (!mod) return;
+        var fn = mod.functions.find(function(f) { return f.id === selectedFnId; });
+        if (!fn) {
+            placeholder.style.display = '';
+            form.style.display = 'none';
+            return;
+        }
+
+        placeholder.style.display = 'none';
+        form.style.display = 'block';
+
+        // 填充表单
+        document.getElementById('fn-name').value = fn.name;
+        document.getElementById('fn-display-name').value = fn.displayName || '';
+        document.getElementById('fn-module').value = fn.module || '';
+        document.getElementById('fn-returns').checked = fn.returns;
+        document.getElementById('fn-colour').value = fn.colour !== undefined ? fn.colour : mod.colour;
+        updateColourPreview();
+
+        // 渲染参数列表
+        renderParams('simple', fn.params || []);
+        renderParams('full', fn.fullParams || []);
+    }
+
+    function renderParams(type, params) {
+        var container = document.getElementById(type + '-params-list');
+        container.innerHTML = '';
+        params.forEach(function(p, idx) {
+            var row = document.createElement('div');
+            row.className = 'param-row';
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.value = p;
+            input.placeholder = '参数名';
+            input.dataset.type = type;
+            input.dataset.index = idx;
+
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'param-remove-btn';
+            btn.textContent = '\u00d7';
+            btn.onclick = function() { removeParam(type, idx); };
+
+            row.appendChild(input);
+            row.appendChild(btn);
+            container.appendChild(row);
+        });
+    }
+
+    function addParam(type) {
+        var container = document.getElementById(type + '-params-list');
+        var idx = container.querySelectorAll('.param-row').length;
+
+        var row = document.createElement('div');
+        row.className = 'param-row';
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = '参数名';
+        input.dataset.type = type;
+        input.dataset.index = idx;
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'param-remove-btn';
+        btn.textContent = '\u00d7';
+        btn.onclick = function() { row.remove(); };
+
+        row.appendChild(input);
+        row.appendChild(btn);
+        container.appendChild(row);
+
+        input.focus();
+    }
+
+    function removeParam(type, idx) {
+        var container = document.getElementById(type + '-params-list');
+        var rows = container.querySelectorAll('.param-row');
+        if (rows[idx]) rows[idx].remove();
+    }
+
+    function collectParams(type) {
+        var container = document.getElementById(type + '-params-list');
+        var inputs = container.querySelectorAll('input[type="text"]');
+        var params = [];
+        inputs.forEach(function(input) {
+            var val = input.value.trim();
+            if (val) params.push(val);
+        });
+        return params;
+    }
+
+    // ── 颜色预览 ──
+    function hslColour(hue) {
+        return 'hsl(' + hue + ', 65%, 60%)';
+    }
+
+    function updateColourPreview() {
+        var val = document.getElementById('fn-colour').value;
+        document.getElementById('fn-colour-preview').style.background = hslColour(val);
+        document.getElementById('fn-colour-value').textContent = val;
+    }
+
+    function updateModColourPreview() {
+        var val = document.getElementById('mod-colour').value;
+        document.getElementById('mod-colour-preview').style.background = hslColour(val);
+        document.getElementById('mod-colour-value').textContent = val;
+    }
+
+    // ── 模块 CRUD ──
+    function showCreateModuleDialog() {
+        editingModuleId = null;
+        document.getElementById('module-dialog-title').textContent = '新建模块';
+        document.getElementById('mod-name').value = '';
+        document.getElementById('mod-description').value = '';
+        document.getElementById('mod-colour').value = 210;
+        updateModColourPreview();
+        document.getElementById('module-edit-overlay').classList.add('visible');
+        document.getElementById('mod-name').focus();
+    }
+
+    function showEditModuleDialog(moduleId) {
+        var mod = allModules.find(function(m) { return m.id === moduleId; });
+        if (!mod) return;
+        editingModuleId = moduleId;
+        document.getElementById('module-dialog-title').textContent = '编辑模块';
+        document.getElementById('mod-name').value = mod.name;
+        document.getElementById('mod-description').value = mod.description || '';
+        document.getElementById('mod-colour').value = mod.colour;
+        updateModColourPreview();
+        document.getElementById('module-edit-overlay').classList.add('visible');
+        document.getElementById('mod-name').focus();
+    }
+
+    function closeModuleDialog() {
+        document.getElementById('module-edit-overlay').classList.remove('visible');
+        editingModuleId = null;
+    }
+
+    function saveModule() {
+        var name = document.getElementById('mod-name').value.trim();
+        if (!name) {
+            document.getElementById('mod-name').focus();
+            return;
+        }
+        var data = {
+            name: name,
+            description: document.getElementById('mod-description').value.trim(),
+            colour: parseInt(document.getElementById('mod-colour').value, 10),
+        };
+
+        var promise;
+        if (editingModuleId) {
+            promise = window.moduleManagerAPI.updateModule(editingModuleId, data);
+        } else {
+            promise = window.moduleManagerAPI.createModule(data);
+        }
+        promise.then(function(result) {
+            var wasCreating = !editingModuleId;
+            closeModuleDialog();
+            if (wasCreating && result && result.id) {
+                selectedModuleId = result.id;
+            }
+            loadData();
+            notifyMainWindow();
+            setStatus('模块已保存');
+        });
+    }
+
+    function deleteModule(moduleId) {
+        var mod = allModules.find(function(m) { return m.id === moduleId; });
+        if (!mod) return;
+        var fnCount = mod.functions ? mod.functions.length : 0;
+        var msg = '确定要删除模块"' + mod.name + '"吗？';
+        if (fnCount > 0) msg += '\n该模块下有 ' + fnCount + ' 个函数将一并删除。';
+        if (!confirm(msg)) return;
+
+        window.moduleManagerAPI.deleteModule(moduleId).then(function() {
+            if (selectedModuleId === moduleId) {
+                selectedModuleId = null;
+                selectedFnId = null;
+            }
+            loadData();
+            notifyMainWindow();
+            setStatus('模块已删除');
+        });
+    }
+
+    // ── 函数 CRUD ──
+    function createFunction() {
+        if (!selectedModuleId) return;
+        var mod = allModules.find(function(m) { return m.id === selectedModuleId; });
+        var fnData = {
+            name: 'new_function',
+            displayName: '',
+            returns: false,
+            colour: mod ? mod.colour : 210,
+            params: [],
+            fullParams: [],
+            module: '',
+        };
+        window.moduleManagerAPI.createFunction(selectedModuleId, fnData).then(function(fn) {
+            if (fn && fn.id) {
+                selectedFnId = fn.id;
+            }
+            loadData();
+            notifyMainWindow();
+            setStatus('函数已创建');
+        });
+    }
+
+    function saveFunction(e) {
+        if (e) e.preventDefault();
+        if (!selectedModuleId || !selectedFnId) return false;
+
+        var name = document.getElementById('fn-name').value.trim();
+        if (!name) {
+            document.getElementById('fn-name').focus();
+            return false;
+        }
+        // 验证函数名是合法的 Python 标识符
+        if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(name)) {
+            alert('函数名必须是合法的 Python 标识符（字母、数字、下划线，不能以数字开头）');
+            document.getElementById('fn-name').focus();
+            return false;
+        }
+
+        var simpleParams = collectParams('simple');
+        var fullParams = collectParams('full');
+
+        var fnData = {
+            name: name,
+            displayName: document.getElementById('fn-display-name').value.trim(),
+            module: document.getElementById('fn-module').value.trim(),
+            returns: document.getElementById('fn-returns').checked,
+            colour: parseInt(document.getElementById('fn-colour').value, 10),
+            params: simpleParams,
+            fullParams: fullParams,
+        };
+
+        window.moduleManagerAPI.updateFunction(selectedModuleId, selectedFnId, fnData).then(function() {
+            loadData();
+            notifyMainWindow();
+            setStatus('函数已保存');
+        });
+        return false;
+    }
+
+    function deleteFunction() {
+        if (!selectedModuleId || !selectedFnId) return;
+        var mod = allModules.find(function(m) { return m.id === selectedModuleId; });
+        if (!mod) return;
+        var fn = mod.functions.find(function(f) { return f.id === selectedFnId; });
+        if (!fn) return;
+        if (!confirm('确定要删除函数"' + fn.name + '"吗？')) return;
+
+        window.moduleManagerAPI.deleteFunction(selectedModuleId, selectedFnId).then(function() {
+            selectedFnId = null;
+            loadData();
+            notifyMainWindow();
+            setStatus('函数已删除');
+        });
+    }
+
+    // ── 导入导出 ──
+    function importModules() {
+        window.moduleManagerAPI.importModule().then(function(result) {
+            if (result.canceled) return;
+            if (result.error) {
+                alert('导入失败: ' + result.error);
+                return;
+            }
+            loadData();
+            notifyMainWindow();
+            setStatus('模块导入成功');
+        });
+    }
+
+    function exportModules() {
+        window.moduleManagerAPI.exportModule(selectedModuleId || undefined).then(function(result) {
+            if (result.canceled) return;
+            setStatus('已导出到 ' + result.filePath);
+        });
+    }
+
+    // ── 通知主窗口 ──
+    function notifyMainWindow() {
+        window.moduleManagerAPI.notifyChanged();
+    }
+
+    // ── 状态栏 ──
+    function updateStatus() {
+        var totalFns = 0;
+        allModules.forEach(function(m) { totalFns += (m.functions ? m.functions.length : 0); });
+        document.getElementById('status-text').textContent =
+            allModules.length + ' 个模块, ' + totalFns + ' 个函数';
+    }
+
+    function setStatus(msg) {
+        document.getElementById('status-text').textContent = msg;
+        setTimeout(updateStatus, 2000);
+    }
+
+    // ── 键盘快捷键 ──
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeModuleDialog();
+        }
+        // Ctrl+S 保存当前函数
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            e.preventDefault();
+            if (selectedFnId) saveFunction();
+        }
+    });
+
+    // 模块对话框回车确认
+    document.getElementById('mod-name').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveModule(); }
+    });
+    document.getElementById('mod-description').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') { e.preventDefault(); saveModule(); }
+    });
+</script>
+</body>
+</html>
