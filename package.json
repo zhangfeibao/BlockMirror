@@ -2,14 +2,15 @@
   "name": "@blockpy-edu/blockmirror",
   "version": "2.0.0",
   "description": "A dual block/text editor using Blockly and CodeMirror for Python",
-  "main": "webpack.config.js",
+  "main": "electron/main.js",
   "directories": {
     "example": "example"
   },
   "scripts": {
     "build": "webpack --mode production",
     "devbuild": "webpack --mode development",
-    "watch": "webpack --watch --mode development"
+    "watch": "webpack --watch --mode development",
+    "electron:start": "electron ."
   },
   "repository": {
     "type": "git",
@@ -29,6 +30,7 @@
     "babel-jest": "^29.7.0",
     "babel-loader": "^8.1.0",
     "babel-plugin-add-module-exports": "^1.0.2",
+    "electron": "^40.8.0",
     "elliptic": "^6.5.3",
     "lodash": ">=4.17.19",
     "uglify-js": "^3.10.1",
