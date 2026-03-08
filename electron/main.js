@@ -1,5 +1,6 @@
-const { app, BrowserWindow, Menu, ipcMain } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { spawn } = require('child_process');
 
 let mainWindow = null;
@@ -78,6 +79,74 @@ ipcMain.on('terminal:resize', (_, { cols, rows }) => {
     // 预留接口，node-pty 升级时启用：ptyProcess.resize(cols, rows)
 });
 
+// ── 文件系统 IPC ──
+ipcMain.handle('file:open', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        filters: [
+            { name: 'Python 文件', extensions: ['py'] },
+            { name: '所有文件', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    const filePath = result.filePaths[0];
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return { canceled: false, filePath, content };
+});
+
+ipcMain.handle('file:save', async (_, { filePath, content }) => {
+    fs.writeFileSync(filePath, content, 'utf-8');
+    return { success: true };
+});
+
+ipcMain.handle('file:saveAs', async (_, { content }) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+        filters: [
+            { name: 'Python 文件', extensions: ['py'] },
+            { name: '所有文件', extensions: ['*'] },
+        ],
+    });
+    if (result.canceled) return { canceled: true };
+    fs.writeFileSync(result.filePath, content, 'utf-8');
+    return { canceled: false, filePath: result.filePath };
+});
+
+ipcMain.handle('file:exportPng', async (_, { dataUrl }) => {
+    const result = await dialog.showSaveDialog(mainWindow, {
+        filters: [{ name: 'PNG 图片', extensions: ['png'] }],
+    });
+    if (result.canceled) return { canceled: true };
+    const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
+    fs.writeFileSync(result.filePath, Buffer.from(base64Data, 'base64'));
+    return { canceled: false, filePath: result.filePath };
+});
+
+ipcMain.handle('file:confirmSave', async () => {
+    const result = await dialog.showMessageBox(mainWindow, {
+        type: 'warning',
+        title: '未保存的更改',
+        message: '当前文件有未保存的更改，是否保存？',
+        buttons: ['保存', '不保存', '取消'],
+        defaultId: 0,
+        cancelId: 2,
+    });
+    // response: 0=保存, 1=不保存, 2=取消
+    return { response: result.response };
+});
+
+ipcMain.on('window:setTitle', (_, title) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.setTitle(title);
+    }
+});
+
+ipcMain.on('window:forceClose', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.removeAllListeners('close');
+        mainWindow.close();
+    }
+});
+
 // 窗口创建：注册 preload
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -96,6 +165,12 @@ function createWindow() {
     // 开发时可取消注释以打开 DevTools
     // mainWindow.webContents.openDevTools();
 
+    // 窗口关闭拦截：检查未保存的更改
+    mainWindow.on('close', (e) => {
+        e.preventDefault();
+        sendToRenderer('menu:command', 'file:beforeClose');
+    });
+
     mainWindow.on('closed', () => {
         if (pythonProcess) pythonProcess.kill();
         if (shellProcess) shellProcess.kill();
@@ -103,9 +178,70 @@ function createWindow() {
     });
 }
 
-Menu.setApplicationMenu(null);
+// ── 构建原生应用菜单 ──
+function buildAppMenu() {
+    const template = [
+        {
+            label: '文件(&F)',
+            submenu: [
+                { label: '新建', accelerator: 'CmdOrCtrl+N', click: () => sendToRenderer('menu:command', 'file:new') },
+                { label: '打开...', accelerator: 'CmdOrCtrl+O', click: () => sendToRenderer('menu:command', 'file:open') },
+                { type: 'separator' },
+                { label: '保存', accelerator: 'CmdOrCtrl+S', click: () => sendToRenderer('menu:command', 'file:save') },
+                { label: '另存为...', accelerator: 'CmdOrCtrl+Shift+S', click: () => sendToRenderer('menu:command', 'file:saveAs') },
+                { type: 'separator' },
+                { label: '导出 PNG...', click: () => sendToRenderer('menu:command', 'file:exportPng') },
+                { type: 'separator' },
+                { label: '退出', accelerator: 'Alt+F4', click: () => { if (mainWindow) mainWindow.close(); } },
+            ],
+        },
+        {
+            label: '编辑(&E)',
+            submenu: [
+                { role: 'undo', label: '撤销' },
+                { role: 'redo', label: '重做' },
+                { type: 'separator' },
+                { role: 'cut', label: '剪切' },
+                { role: 'copy', label: '复制' },
+                { role: 'paste', label: '粘贴' },
+                { type: 'separator' },
+                { role: 'selectAll', label: '全选' },
+            ],
+        },
+        {
+            label: '视图(&V)',
+            submenu: [
+                { label: '块视图', click: () => sendToRenderer('menu:command', 'view:block') },
+                { label: '分屏视图', click: () => sendToRenderer('menu:command', 'view:split') },
+                { label: '文本视图', click: () => sendToRenderer('menu:command', 'view:text') },
+                { type: 'separator' },
+                { label: '切换终端', click: () => sendToRenderer('menu:command', 'view:toggleTerminal') },
+                { type: 'separator' },
+                { label: '开发者工具', accelerator: 'F12', click: () => { if (mainWindow) mainWindow.webContents.toggleDevTools(); } },
+            ],
+        },
+        {
+            label: '帮助(&H)',
+            submenu: [
+                {
+                    label: '关于 BlockMirror',
+                    click: () => {
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: '关于 BlockMirror',
+                            message: 'BlockMirror',
+                            detail: '双模式 Python 编辑器\n基于 Blockly + CodeMirror',
+                        });
+                    },
+                },
+            ],
+        },
+    ];
+    Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
 
 app.whenReady().then(() => {
+    buildAppMenu();
     createWindow();
 
     app.on('activate', () => {

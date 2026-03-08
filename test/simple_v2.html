@@ -226,12 +226,80 @@
         #xterm-container { flex: 1; overflow: hidden; padding: 4px; }
         .xterm { height: 100%; }
         .xterm-viewport { overflow-y: auto !important; }
+
+        /* 文件操作按钮 */
+        .toolbar-icon-btn {
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: #64748b;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            padding: 0;
+        }
+
+        .toolbar-icon-btn:hover {
+            background: #e2e8f0;
+            color: #334155;
+        }
+
+        .toolbar-icon-btn svg {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
+        #file-actions {
+            display: none;
+            align-items: center;
+            gap: 2px;
+            padding-right: 12px;
+            margin-right: 0;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        #file-name {
+            display: none;
+            font-size: 12px;
+            color: #64748b;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
     </style>
 </head>
 <body>
 
 <div id="toolbar">
     <span id="toolbar-title">BlockMirror</span>
+    <div id="file-actions">
+        <button class="toolbar-icon-btn" title="新建 (Ctrl+N)" onclick="fileNew()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 1h5.5L13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                <polyline points="9,1 9,5 13,5"/>
+            </svg>
+        </button>
+        <button class="toolbar-icon-btn" title="打开 (Ctrl+O)" onclick="fileOpen()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M2 13V4a1 1 0 0 1 1-1h3l2 2h5a1 1 0 0 1 1 1v1"/>
+                <path d="M2 13l1.5-5h11l-1.5 5H2z"/>
+            </svg>
+        </button>
+        <button class="toolbar-icon-btn" title="保存 (Ctrl+S)" onclick="fileSave()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M12.5 15h-9A1.5 1.5 0 0 1 2 13.5v-11A1.5 1.5 0 0 1 3.5 1H11l3 3v9.5a1.5 1.5 0 0 1-1.5 1.5z"/>
+                <rect x="5" y="1" width="6" height="4"/>
+                <rect x="4" y="9" width="8" height="4"/>
+            </svg>
+        </button>
+    </div>
+    <span id="file-name"></span>
     <div id="mode-switcher">
         <button class="mode-btn" data-mode="block" onclick="setMode('block')">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -494,7 +562,196 @@
     window.addEventListener('load', function() {
         syncEditorHeight();
         initTerminal();
+        initMenuCommands();
+        updateWindowTitle();
     });
+
+    // ── 文件状态管理 ──
+    var fileState = { currentPath: null, isDirty: false, initialCode: '' };
+
+    function getFileName() {
+        if (!fileState.currentPath) return '未命名';
+        var parts = fileState.currentPath.replace(/\\/g, '/').split('/');
+        return parts[parts.length - 1];
+    }
+
+    function updateWindowTitle() {
+        var name = getFileName();
+        var dirty = fileState.isDirty ? '*' : '';
+        var title = name + dirty + ' - BlockMirror';
+        document.title = title;
+        if (window.electronAPI && window.electronAPI.setWindowTitle) {
+            window.electronAPI.setWindowTitle(title);
+        }
+        // 更新工具栏文件名显示
+        var el = document.getElementById('file-name');
+        if (el) el.textContent = name + dirty;
+    }
+
+    function markDirty() {
+        if (!fileState.isDirty) {
+            fileState.isDirty = true;
+            updateWindowTitle();
+        }
+    }
+
+    function markClean() {
+        fileState.isDirty = false;
+        fileState.initialCode = editor.getCode();
+        updateWindowTitle();
+    }
+
+    // 监听编辑器代码变化
+    editor.addChangeListener(function() {
+        var currentCode = editor.getCode();
+        if (currentCode !== fileState.initialCode) {
+            markDirty();
+        } else if (fileState.isDirty) {
+            fileState.isDirty = false;
+            updateWindowTitle();
+        }
+    });
+
+    // ── 文件操作函数 ──
+    function confirmSaveIfDirty() {
+        if (!fileState.isDirty) return Promise.resolve('discard');
+        if (!window.electronAPI) return Promise.resolve('discard');
+        return window.electronAPI.fileConfirmSave().then(function(result) {
+            if (result.response === 0) return 'save';
+            if (result.response === 1) return 'discard';
+            return 'cancel';
+        });
+    }
+
+    function doSave() {
+        var code = editor.getCode();
+        if (fileState.currentPath) {
+            return window.electronAPI.fileSave({ filePath: fileState.currentPath, content: code }).then(function() {
+                markClean();
+                return true;
+            });
+        } else {
+            return window.electronAPI.fileSaveAs({ content: code }).then(function(result) {
+                if (result.canceled) return false;
+                fileState.currentPath = result.filePath;
+                markClean();
+                return true;
+            });
+        }
+    }
+
+    function fileNew() {
+        confirmSaveIfDirty().then(function(action) {
+            if (action === 'cancel') return;
+            if (action === 'save') {
+                return doSave().then(function(saved) {
+                    if (saved) resetEditor();
+                });
+            }
+            resetEditor();
+        });
+    }
+
+    function resetEditor() {
+        editor.setCode('');
+        fileState.currentPath = null;
+        fileState.isDirty = false;
+        fileState.initialCode = '';
+        updateWindowTitle();
+    }
+
+    function fileOpen() {
+        confirmSaveIfDirty().then(function(action) {
+            if (action === 'cancel') return;
+            if (action === 'save') {
+                return doSave().then(function(saved) {
+                    if (saved) doOpen();
+                });
+            }
+            doOpen();
+        });
+    }
+
+    function doOpen() {
+        window.electronAPI.fileOpen().then(function(result) {
+            if (result.canceled) return;
+            editor.setCode(result.content);
+            fileState.currentPath = result.filePath;
+            fileState.isDirty = false;
+            fileState.initialCode = result.content;
+            updateWindowTitle();
+        });
+    }
+
+    function fileSave() {
+        if (!window.electronAPI) return;
+        doSave();
+    }
+
+    function fileSaveAs() {
+        if (!window.electronAPI) return;
+        var code = editor.getCode();
+        window.electronAPI.fileSaveAs({ content: code }).then(function(result) {
+            if (result.canceled) return;
+            fileState.currentPath = result.filePath;
+            markClean();
+        });
+    }
+
+    function fileExportPng() {
+        if (!window.electronAPI) return;
+        // getPngFromBlocks 是异步 callback 方式，属于 blockEditor
+        if (!editor.blockEditor || typeof editor.blockEditor.getPngFromBlocks !== 'function') {
+            alert('当前视图模式不支持导出 PNG');
+            return;
+        }
+        editor.blockEditor.getPngFromBlocks(function(dataUrl, img) {
+            if (!dataUrl) {
+                alert('无法生成 PNG，请切换到包含块视图的模式');
+                return;
+            }
+            window.electronAPI.fileExportPng({ dataUrl: dataUrl });
+        });
+    }
+
+    function handleBeforeClose() {
+        confirmSaveIfDirty().then(function(action) {
+            if (action === 'cancel') return;
+            if (action === 'save') {
+                return doSave().then(function(saved) {
+                    if (saved) window.electronAPI.forceClose();
+                });
+            }
+            window.electronAPI.forceClose();
+        });
+    }
+
+    // ── 菜单命令分发器 ──
+    function initMenuCommands() {
+        if (!window.electronAPI) return;
+
+        // 显示文件操作按钮和文件名
+        var fileActions = document.getElementById('file-actions');
+        var fileName = document.getElementById('file-name');
+        if (fileActions) fileActions.style.display = 'flex';
+        if (fileName) fileName.style.display = 'block';
+
+        // 监听菜单命令
+        window.electronAPI.onMenuCommand(function(command) {
+            switch (command) {
+                case 'file:new':        fileNew(); break;
+                case 'file:open':       fileOpen(); break;
+                case 'file:save':       fileSave(); break;
+                case 'file:saveAs':     fileSaveAs(); break;
+                case 'file:exportPng':  fileExportPng(); break;
+                case 'file:beforeClose': handleBeforeClose(); break;
+                case 'view:block':      setMode('block'); break;
+                case 'view:split':      setMode('split'); break;
+                case 'view:text':       setMode('text'); break;
+                case 'view:toggleTerminal': toggleTerminal(); break;
+            }
+        });
+    }
 </script>
 </body>
 </html>
