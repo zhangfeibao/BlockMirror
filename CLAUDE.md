@@ -27,7 +27,7 @@ Build output goes to `dist/`:
 There is no automated test suite. Testing is done by opening HTML files in a browser:
 - `test/simple.html` — loads from `dist/` (production)
 - `test/simple_dev.html` — loads source files directly (development, no build needed)
-- `test/simple_v2.html` — entry point used by the Electron app
+- `test/simple_v2.html` — entry point used by the Electron app (has terminal panel)
 - `test/simple_prod.html` — production variant
 - `test/minimal_skulpt.html` — minimal test for Skulpt parser only
 
@@ -53,8 +53,6 @@ BlockMirror is a dual block/text Python editor that synchronizes [Blockly](https
 
 **`src/blockly_shims.js`** — Patches and extensions to Blockly before it is used.
 
-**`electron/main.js`** — Electron entry point; loads `test/simple_v2.html` in a BrowserWindow.
-
 ### Sync / Loop-prevention
 
 To prevent update cycles between the two editors, the main controller uses two boolean flags: `silenceText` (suppress text→block propagation) and `silenceBlock` (suppress block→text propagation). The `blockDelay` option adds a debounce for expensive block renders on large files.
@@ -65,6 +63,66 @@ Colors are referenced via `BlockMirrorTextToBlocks.COLOR.*` constants:
 - Variables: 225 | Functions: 210 | Control flow: 270
 - Math: 150 | Text/Strings: 120 | Logic: 345 | Sequences: 15
 - Dictionary: 0 | OO (object-oriented): 240 | Python builtins: 60 | File I/O: 180
+
+## Electron App Architecture
+
+The Electron app (`npm run electron:start`) adds Python code execution and an integrated xterm.js terminal to the editor. The entry point is `test/simple_v2.html`.
+
+```
+Renderer Process (test/simple_v2.html)
+  ├── BlockMirror editor (Blockly + CodeMirror)
+  ├── xterm.js terminal panel (resizable, draggable)
+  ├── Run/Stop button → editor.getCode() → electronAPI.runPython()
+  └── window.electronAPI  ← exposed via contextBridge
+         ↕ IPC (contextIsolation: true)
+Main Process (electron/main.js)
+  ├── python:run  → spawn('python', ['-u', '-c', code])
+  ├── python:kill → taskkill (Win32) / SIGTERM
+  └── shell:start → spawn('powershell.exe' / 'bash')
+```
+
+**`electron/main.js`** — Main process. Manages two child processes (`pythonProcess`, `shellProcess`), streams stdout/stderr back to the renderer via `terminal:output` IPC events, and handles process lifecycle.
+
+**`electron/preload.js`** — Bridges main ↔ renderer via `contextBridge.exposeInMainWorld('electronAPI', ...)`. IPC channels:
+
+| Direction | Channel | Purpose |
+|-----------|---------|---------|
+| renderer → main (invoke) | `python:run` | Execute Python code string |
+| renderer → main (invoke) | `python:kill` | Kill running Python process |
+| renderer → main (invoke) | `shell:start` | Start persistent shell |
+| renderer → main (send) | `shell:write` | Send keystrokes to shell stdin |
+| renderer → main (send) | `terminal:resize` | Reserved for node-pty upgrade |
+| main → renderer | `terminal:output` | Streamed stdout/stderr text |
+| main → renderer | `process:exit` | Process exit with `{exitCode, source}` |
+| main → renderer | `process:start` | Process started with `{source}` |
+
+### Terminal Shell Interaction (no PTY)
+
+The shell is spawned without a PTY (`child_process.spawn`, not `node-pty`) to avoid native compilation. This means:
+- The shell does **not** echo characters back to the terminal
+- Input must be **line-buffered** in the renderer: characters are locally echoed via `term.write(data)`, accumulated in `shellInputBuffer`, and sent to shell stdin only on `Enter` (`\r`)
+- Backspace, Ctrl+C are handled client-side before forwarding
+
+The `terminal:resize` IPC channel is a no-op stub; upgrade to `node-pty` to enable true PTY resize support.
+
+### BlockMirror Height Sync (`syncEditorHeight`)
+
+`block_editor.js` and `text_editor.js` both read `editor.configuration.height` (default: 500px) to set fixed pixel heights on their internal containers (`blockContainer`, `blockArea`, `textContainer`). This value is set once at construction and never automatically updated.
+
+In `simple_v2.html`, the editor sits in a flex column with a resizable terminal panel below it. Whenever layout changes (drag, window resize, terminal toggle), `syncEditorHeight()` must be called instead of `editor.refresh()`:
+
+```javascript
+function syncEditorHeight() {
+    var h = document.getElementById('blockmirror-editor').offsetHeight;
+    if (h > 0) editor.configuration.height = h;
+    editor.textEditor.resizeResponsively(); // editor.refresh() does NOT call this
+    editor.refresh();                       // calls blockEditor.resized() + codeMirror.refresh()
+}
+```
+
+`editor.refresh()` alone only calls `blockEditor.resized()` — it does **not** call `textEditor.resizeResponsively()`, so the CodeMirror container height would not update without the explicit call above.
+
+`#blockmirror-editor` requires `position: relative` so that `blockEditor`'s `position: absolute` children (Blockly toolbox, scrollbars) are clipped by its `overflow: hidden` rather than escaping to the viewport.
 
 ## Adding a New AST Node
 

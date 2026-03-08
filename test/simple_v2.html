@@ -299,6 +299,8 @@
         if (h > 0) {
             editor.configuration.height = h;
         }
+        // textEditor.resizeResponsively() 更新 textContainer 高度（editor.refresh 不会调它）
+        editor.textEditor.resizeResponsively();
         editor.refresh();
     }
 
@@ -341,8 +343,33 @@
         term.open(document.getElementById('xterm-container'));
         fitAddon.fit();
 
-        // 用户键盘输入 → Shell
-        term.onData(function(data) { window.electronAPI.writeToShell(data); });
+        // 本地行缓冲 + 回显
+        // spawn 无 PTY，Shell 不会回显输入、不会响应逐字节写入；
+        // 需在 xterm.js 侧做本地回显，按 Enter 后再整行发给 Shell。
+        var shellInputBuffer = '';
+        term.onData(function(data) {
+            if (data === '\r') {
+                // Enter：回显换行，整行发给 Shell
+                term.write('\r\n');
+                window.electronAPI.writeToShell(shellInputBuffer + '\n');
+                shellInputBuffer = '';
+            } else if (data === '\x7f' || data === '\b') {
+                // Backspace：删除缓冲末字符并更新显示
+                if (shellInputBuffer.length > 0) {
+                    shellInputBuffer = shellInputBuffer.slice(0, -1);
+                    term.write('\b \b');
+                }
+            } else if (data === '\x03') {
+                // Ctrl+C：转发中断信号
+                window.electronAPI.writeToShell('\x03');
+                term.write('^C\r\n');
+                shellInputBuffer = '';
+            } else if (data.charCodeAt(0) >= 32) {
+                // 可打印字符：本地回显并加入缓冲
+                shellInputBuffer += data;
+                term.write(data);
+            }
+        });
 
         // 主进程输出 → 终端显示
         window.electronAPI.onOutput(function(data) { term.write(data); });
