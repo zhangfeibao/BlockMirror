@@ -787,6 +787,7 @@
 
     var loadedCustomFunctions = {};
     var loadedCustomModuleKeys = {};
+    var loadedCustomModuleImports = {};
 
     function loadCustomModules(data) {
         unloadCustomModules();
@@ -811,6 +812,12 @@
                     BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES[fn.module][fn.name] = signature;
                     if (!loadedCustomModuleKeys[fn.module]) loadedCustomModuleKeys[fn.module] = [];
                     loadedCustomModuleKeys[fn.module].push(fn.name);
+                    // 注册自动导入（仅当该模块前缀尚无内置 import 时）
+                    if (!loadedCustomModuleImports[fn.module] &&
+                        !BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[fn.module]) {
+                        BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[fn.module] = 'import ' + fn.module;
+                        loadedCustomModuleImports[fn.module] = true;
+                    }
                 } else {
                     // 全局函数：注册到 FUNCTION_SIGNATURES
                     BlockMirrorTextToBlocks.prototype.FUNCTION_SIGNATURES[fn.name] = signature;
@@ -847,6 +854,10 @@
             });
         }
         loadedCustomModuleKeys = {};
+        for (var imp in loadedCustomModuleImports) {
+            delete BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[imp];
+        }
+        loadedCustomModuleImports = {};
         for (var key in BlockMirrorBlockEditor.EXTRA_TOOLS) {
             if (key.indexOf('custom_') === 0) delete BlockMirrorBlockEditor.EXTRA_TOOLS[key];
         }
