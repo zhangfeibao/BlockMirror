@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     // Python 执行
-    runPython: (code) => ipcRenderer.invoke('python:run', code),
+    runPython: (filePath) => ipcRenderer.invoke('python:run', filePath),
     killPython: () => ipcRenderer.invoke('python:kill'),
 
     // Shell 交互

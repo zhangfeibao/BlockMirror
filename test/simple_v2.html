@@ -539,13 +539,17 @@
             return;
         }
 
-        showTerminal();
-        setRunningState(true);
-        if (term) term.write('\x1b[90m─── 开始执行 Python 脚本 ───\x1b[0m\r\n');
+        // 保存后再运行：未保存过的文件弹出保存对话框，已保存过的自动保存
+        doSave().then(function(saved) {
+            if (!saved) return; // 用户取消了保存对话框
+            showTerminal();
+            setRunningState(true);
+            if (term) term.write('\x1b[90m─── 开始执行 Python 脚本 ───\x1b[0m\r\n');
 
-        window.electronAPI.runPython(code).catch(function(err) {
-            if (term) term.write('\x1b[31m执行错误: ' + err.message + '\x1b[0m\r\n');
-            setRunningState(false);
+            window.electronAPI.runPython(fileState.currentPath).catch(function(err) {
+                if (term) term.write('\x1b[31m执行错误: ' + err.message + '\x1b[0m\r\n');
+                setRunningState(false);
+            });
         });
     }
 

@@ -17,12 +17,15 @@ function sendToRenderer(channel, data) {
     }
 }
 
-// Python 执行：用 -u（无缓冲）-c（代码字符串）
-ipcMain.handle('python:run', async (event, code) => {
+// Python 执行：在文件所在目录运行 Python 脚本
+ipcMain.handle('python:run', async (event, filePath) => {
     if (pythonProcess) { pythonProcess.kill(); pythonProcess = null; }
 
+    const cwd = path.dirname(filePath);
+
     return new Promise((resolve) => {
-        pythonProcess = spawn('python', ['-u', '-c', code], {
+        pythonProcess = spawn('python', ['-u', filePath], {
+            cwd: cwd,
             env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
         });
 
