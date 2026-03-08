@@ -78,10 +78,13 @@ Renderer Process (test/simple_v2.html)
 Main Process (electron/main.js)
   ├── python:run  → spawn('python', ['-u', '-c', code])
   ├── python:kill → taskkill (Win32) / SIGTERM
-  └── shell:start → spawn('powershell.exe' / 'bash')
+  ├── shell:start → spawn('powershell.exe' / 'bash')
+  ├── file:open/save/saveAs/exportPng/confirmSave → dialog + fs
+  ├── window:setTitle / window:forceClose → BrowserWindow control
+  └── blockfactory:open → opens blockfactory/ in a new BrowserWindow
 ```
 
-**`electron/main.js`** — Main process. Manages two child processes (`pythonProcess`, `shellProcess`), streams stdout/stderr back to the renderer via `terminal:output` IPC events, and handles process lifecycle.
+**`electron/main.js`** — Main process. Manages `pythonProcess`, `shellProcess`, and `blockFactoryWindow`. Streams stdout/stderr via `terminal:output` IPC. Menu items send `menu:command` events to the renderer; the renderer's `initMenuCommands()` dispatches them to handler functions.
 
 **`electron/preload.js`** — Bridges main ↔ renderer via `contextBridge.exposeInMainWorld('electronAPI', ...)`. IPC channels:
 
@@ -92,9 +95,18 @@ Main Process (electron/main.js)
 | renderer → main (invoke) | `shell:start` | Start persistent shell |
 | renderer → main (send) | `shell:write` | Send keystrokes to shell stdin |
 | renderer → main (send) | `terminal:resize` | Reserved for node-pty upgrade |
+| renderer → main (invoke) | `file:open` | Open file dialog → `{canceled, filePath, content}` |
+| renderer → main (invoke) | `file:save` | Save `{filePath, content}` |
+| renderer → main (invoke) | `file:saveAs` | Save-as dialog → `{canceled, filePath}` |
+| renderer → main (invoke) | `file:exportPng` | Export PNG from `{dataUrl}` |
+| renderer → main (invoke) | `file:confirmSave` | Show save-before-close dialog → `{response: 0/1/2}` |
+| renderer → main (send) | `window:setTitle` | Set main window title string |
+| renderer → main (send) | `window:forceClose` | Close window bypassing `close` listener |
+| renderer → main (send) | `blockfactory:open` | Open/focus custom blocks editor window |
 | main → renderer | `terminal:output` | Streamed stdout/stderr text |
 | main → renderer | `process:exit` | Process exit with `{exitCode, source}` |
 | main → renderer | `process:start` | Process started with `{source}` |
+| main → renderer | `menu:command` | Native menu item clicked (e.g. `'file:new'`, `'view:split'`, `'tools:blockFactory'`) |
 
 ### Terminal Shell Interaction (no PTY)
 
@@ -104,6 +116,18 @@ The shell is spawned without a PTY (`child_process.spawn`, not `node-pty`) to av
 - Backspace, Ctrl+C are handled client-side before forwarding
 
 The `terminal:resize` IPC channel is a no-op stub; upgrade to `node-pty` to enable true PTY resize support.
+
+### Menu Command Flow
+
+Native menu items (defined in `buildAppMenu()` in `main.js`) send `menu:command` IPC events to the renderer with a string command key. The renderer's `initMenuCommands()` registers an `onMenuCommand` listener that dispatches to handler functions. To add a new menu action:
+1. Add a menu item in `buildAppMenu()`: `{ label: '...', click: () => sendToRenderer('menu:command', 'ns:action') }`
+2. Add a `case 'ns:action':` in the `switch` inside `initMenuCommands()` in `simple_v2.html`
+
+The toolbar buttons in `simple_v2.html` call the same handler functions directly (no IPC needed).
+
+### BlockFactory Window
+
+`blockfactory/` is a self-contained copy of Google's Blockly Developer Tools for creating custom block definitions. It is opened as a child `BrowserWindow` (no menu bar, `setMenu(null)`) via the `blockfactory:open` IPC channel. The window carries its own copies of Blockly in `blockfactory/dist/` and `blockfactory/build/`. Its `beforeunload` hook is suppressed via `webContents.on('will-prevent-unload', e => e.preventDefault())` so the close button works normally.
 
 ### BlockMirror Height Sync (`syncEditorHeight`)
 
