@@ -542,6 +542,7 @@
         /* 输入区 */
         #ai-input-area {
             display: flex;
+            flex-direction: column;
             padding: 10px 12px;
             background: #2d2d3d;
             border-top: 1px solid #444;
@@ -549,7 +550,7 @@
             flex-shrink: 0;
         }
         #ai-input {
-            flex: 1;
+            width: 100%;
             background: #1e1e2e;
             color: #d4d4d4;
             border: 1px solid #555;
@@ -557,15 +558,20 @@
             padding: 8px 12px;
             font-size: 13px;
             font-family: inherit;
-            resize: none;
-            min-height: 40px;
-            max-height: 120px;
-            line-height: 1.4;
+            resize: vertical;
+            min-height: 80px;
+            max-height: 200px;
+            line-height: 1.5;
         }
         #ai-input:focus { outline: none; border-color: #2563eb; }
         #ai-input::placeholder { color: #6b7280; }
+        #ai-input-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         #ai-send-btn {
-            align-self: flex-end;
+            margin-left: auto;
             background: #2563eb;
             color: white;
             border: none;
@@ -579,6 +585,44 @@
         }
         #ai-send-btn:hover { background: #1d4ed8; }
         #ai-send-btn:disabled { background: #4b5563; cursor: not-allowed; }
+
+        /* API 文档按钮 */
+        #ai-api-doc-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: none;
+            border: 1px solid #555;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+        #ai-api-doc-btn:hover { background: #3d3d4d; color: #d1d5db; }
+        #ai-api-doc-btn.loaded { border-color: #16a34a; color: #4ade80; }
+        #ai-api-doc-btn svg { width: 12px; height: 12px; flex-shrink: 0; }
+        #ai-api-doc-name {
+            font-size: 11px;
+            color: #6b7280;
+            max-width: 140px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #ai-api-doc-clear {
+            background: none;
+            border: none;
+            color: #6b7280;
+            cursor: pointer;
+            font-size: 13px;
+            padding: 0 2px;
+            line-height: 1;
+        }
+        #ai-api-doc-clear:hover { color: #ef4444; }
 
         /* 设置对话框 */
         #ai-settings-overlay {
@@ -767,9 +811,19 @@
     </div>
     <div id="ai-messages"></div>
     <div id="ai-input-area">
-        <textarea id="ai-input" placeholder="Ask AI to write Python code..." rows="1"
-                  onkeydown="aiInputKeyDown(event)" oninput="aiInputAutoResize(this)"></textarea>
-        <button id="ai-send-btn" onclick="sendAiMessage()">Send</button>
+        <textarea id="ai-input" placeholder="Ask AI to write Python code..." rows="4"></textarea>
+        <div id="ai-input-actions">
+            <button id="ai-api-doc-btn" onclick="selectApiDoc()" title="Load API documentation for hardware interfaces">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4 1h5.5L13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                    <polyline points="9,1 9,5 13,5"/>
+                </svg>
+                API Doc
+            </button>
+            <span id="ai-api-doc-name"></span>
+            <button id="ai-api-doc-clear" onclick="clearApiDoc()" style="display:none;" title="Remove API doc">x</button>
+            <button id="ai-send-btn" onclick="sendAiMessage()">Send</button>
+        </div>
     </div>
 </div>
 </div>
@@ -1347,6 +1401,8 @@
         currentConversationId: null,
         conversations: [],
         isSending: false,
+        apiDocContent: '',
+        apiDocFileName: '',
     };
 
     function initAiChat() {
@@ -1496,7 +1552,6 @@
         }
 
         inputEl.value = '';
-        aiInputAutoResize(inputEl);
         aiState.isSending = true;
         updateSendButton();
 
@@ -1511,10 +1566,11 @@
         document.getElementById('ai-messages').appendChild(loadingEl);
         scrollMessagesToBottom();
 
-        // Attach current editor code as context
+        // Attach current editor code and API doc as context
         var editorCode = editor.getCode() || '';
+        var apiDoc = aiState.apiDocContent || '';
 
-        window.electronAPI.aiSendMessage(aiState.currentConversationId, text, editorCode).then(function(result) {
+        window.electronAPI.aiSendMessage(aiState.currentConversationId, text, editorCode, apiDoc).then(function(result) {
             // Remove loading indicator
             if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
 
@@ -1534,18 +1590,6 @@
             aiState.isSending = false;
             updateSendButton();
         });
-    }
-
-    function aiInputKeyDown(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendAiMessage();
-        }
-    }
-
-    function aiInputAutoResize(el) {
-        el.style.height = 'auto';
-        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
     }
 
     function updateSendButton() {
@@ -1680,6 +1724,43 @@
             document.getElementById('ai-model-select').value = data.model;
             closeAiSettings();
         });
+    }
+
+    // ── API 文档管理 ──
+    function selectApiDoc() {
+        if (!window.electronAPI || !window.electronAPI.aiSelectApiDoc) {
+            alert('This feature is only available in Electron.');
+            return;
+        }
+        window.electronAPI.aiSelectApiDoc().then(function(result) {
+            if (result.canceled) return;
+            aiState.apiDocContent = result.content;
+            aiState.apiDocFileName = result.fileName;
+            updateApiDocUI();
+        });
+    }
+
+    function clearApiDoc() {
+        aiState.apiDocContent = '';
+        aiState.apiDocFileName = '';
+        updateApiDocUI();
+    }
+
+    function updateApiDocUI() {
+        var btn = document.getElementById('ai-api-doc-btn');
+        var nameEl = document.getElementById('ai-api-doc-name');
+        var clearBtn = document.getElementById('ai-api-doc-clear');
+        if (aiState.apiDocFileName) {
+            btn.classList.add('loaded');
+            nameEl.textContent = aiState.apiDocFileName;
+            nameEl.title = aiState.apiDocFileName;
+            clearBtn.style.display = 'inline';
+        } else {
+            btn.classList.remove('loaded');
+            nameEl.textContent = '';
+            nameEl.title = '';
+            clearBtn.style.display = 'none';
+        }
     }
 </script>
 </body>

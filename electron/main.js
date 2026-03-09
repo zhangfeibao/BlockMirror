@@ -299,7 +299,22 @@ ipcMain.handle('ai:clearConversation', async (_, id) => {
     return aiConversationsStore.clearMessages(id);
 });
 
-ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage, editorCode }) => {
+ipcMain.handle('ai:selectApiDoc', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        filters: [
+            { name: 'Text/Markdown', extensions: ['txt', 'md', 'json', 'yaml', 'yml', 'rst'] },
+            { name: 'All Files', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    const filePath = result.filePaths[0];
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const fileName = path.basename(filePath);
+    return { canceled: false, filePath, fileName, content };
+});
+
+ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage, editorCode, apiDocContent }) => {
     const settings = aiSettingsStore.getAll();
 
     // Save user message to conversation
@@ -312,8 +327,11 @@ ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage, editor
     // Build messages (exclude system prompt - it's sent separately)
     const messages = conv.messages.map(m => ({ role: m.role, content: m.content }));
 
-    // Build dynamic system prompt: base prompt + current editor code
+    // Build dynamic system prompt: base prompt + API doc + current editor code
     let systemPrompt = settings.systemPrompt || '';
+    if (apiDocContent && apiDocContent.trim()) {
+        systemPrompt += '\n\n--- Hardware API Reference Documentation ---\n' + apiDocContent + '\n--- End of API Documentation ---\nYou MUST use only the API functions described above when generating code that interacts with hardware devices. Do not invent or assume any API functions not listed in this documentation.';
+    }
     if (editorCode && editorCode.trim()) {
         systemPrompt += '\n\n--- Current code in the editor ---\n```python\n' + editorCode + '\n```\nWhen the user asks to modify or improve code, base your changes on the code above.';
     }

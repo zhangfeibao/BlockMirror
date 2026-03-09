@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
 
     // AI 助手
-    aiSendMessage: (conversationId, userMessage, editorCode) => ipcRenderer.invoke('ai:sendMessage', { conversationId, userMessage, editorCode }),
+    aiSendMessage: (conversationId, userMessage, editorCode, apiDocContent) => ipcRenderer.invoke('ai:sendMessage', { conversationId, userMessage, editorCode, apiDocContent }),
     aiGetSettings: () => ipcRenderer.invoke('ai:getSettings'),
     aiSaveSettings: (data) => ipcRenderer.invoke('ai:saveSettings', data),
     aiGetConversations: () => ipcRenderer.invoke('ai:getConversations'),
@@ -40,6 +40,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     aiCreateConversation: (title) => ipcRenderer.invoke('ai:createConversation', title),
     aiDeleteConversation: (id) => ipcRenderer.invoke('ai:deleteConversation', id),
     aiClearConversation: (id) => ipcRenderer.invoke('ai:clearConversation', id),
+    aiSelectApiDoc: () => ipcRenderer.invoke('ai:selectApiDoc'),
 
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {
