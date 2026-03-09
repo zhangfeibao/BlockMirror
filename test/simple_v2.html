@@ -265,7 +265,8 @@
         }
 
         #blockfactory-btn,
-        #module-manager-btn {
+        #module-manager-btn,
+        #vscode-btn {
             display: none;
             align-items: center;
             gap: 6px;
@@ -283,14 +284,16 @@
         }
 
         #blockfactory-btn:hover,
-        #module-manager-btn:hover {
+        #module-manager-btn:hover,
+        #vscode-btn:hover {
             background: #f1f5f9;
             color: #334155;
             border-color: #cbd5e1;
         }
 
         #blockfactory-btn svg,
-        #module-manager-btn svg {
+        #module-manager-btn svg,
+        #vscode-btn svg {
             width: 14px;
             height: 14px;
             flex-shrink: 0;
@@ -935,6 +938,14 @@
         </svg>
         AI 助手
     </button>
+    <button id="vscode-btn" title="在 VS Code 中打开 device_api" onclick="openVscode()" style="display:none;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="5,2 1,8 5,14"/>
+            <polyline points="11,2 15,8 11,14"/>
+            <line x1="10" y1="3" x2="6" y2="13"/>
+        </svg>
+        VS Code
+    </button>
     <div id="ramgs-toolbar">
         <button class="ramgs-tool-btn" title="生成符号表" onclick="showCreateDialog()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1538,6 +1549,15 @@
         window.electronAPI.openModuleManager();
     }
 
+    function openVscode() {
+        if (!window.electronAPI) return;
+        window.electronAPI.openVscode().then(function(result) {
+            if (!result.success) {
+                alert(result.error);
+            }
+        });
+    }
+
     var loadedCustomFunctions = {};
     var loadedCustomModuleKeys = {};
     var loadedCustomModuleImports = {};
@@ -1630,11 +1650,13 @@
         var blockfactoryBtn = document.getElementById('blockfactory-btn');
         var moduleManagerBtn = document.getElementById('module-manager-btn');
         var aiChatBtn = document.getElementById('ai-chat-btn');
+        var vscodeBtn = document.getElementById('vscode-btn');
         if (fileActions) fileActions.style.display = 'flex';
         if (fileName) fileName.style.display = 'block';
         if (blockfactoryBtn) blockfactoryBtn.style.display = 'flex';
         if (moduleManagerBtn) moduleManagerBtn.style.display = 'flex';
         if (aiChatBtn) aiChatBtn.style.display = 'flex';
+        if (vscodeBtn) vscodeBtn.style.display = 'flex';
 
         // ramgs toolbar + status bar
         var ramgsToolbar = document.getElementById('ramgs-toolbar');
@@ -1662,6 +1684,7 @@
                 case 'ramgs:load': showLoadDialog(); break;
                 case 'ramgs:connect': showConnectDialog(); break;
                 case 'ramgs:disconnect': doDisconnect(); break;
+                case 'tools:openVscode': openVscode(); break;
             }
         });
 

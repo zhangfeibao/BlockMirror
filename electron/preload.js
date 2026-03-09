@@ -53,6 +53,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ramgsSelectSymbols: () => ipcRenderer.invoke('ramgs:selectSymbols'),
     ramgsSelectOutputDir: () => ipcRenderer.invoke('ramgs:selectOutputDir'),
 
+    // VS Code
+    openVscode: () => ipcRenderer.invoke('vscode:open'),
+
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {
         const fn = (_, data) => callback(data);

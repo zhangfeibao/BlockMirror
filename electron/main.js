@@ -44,6 +44,21 @@ function getRamgsDir() {
     return path.join(__dirname, '..', 'ramgs');
 }
 
+function getVscodeExePath() {
+    const devPath = path.join(__dirname, '..', 'VSCode', 'Code.exe');
+    const prodPath = path.join(process.resourcesPath || '', 'VSCode', 'Code.exe');
+    if (fs.existsSync(prodPath)) return prodPath;
+    if (fs.existsSync(devPath)) return devPath;
+    return null;
+}
+
+function getDeviceApiDir() {
+    const devPath = path.join(__dirname, '..', 'device_api');
+    const prodPath = path.join(process.resourcesPath || '', 'device_api');
+    if (fs.existsSync(prodPath)) return prodPath;
+    return devPath;
+}
+
 function ensureRamgsInPath() {
     const ramgsDir = getRamgsDir();
     const envPath = process.env.PATH || process.env.Path || '';
@@ -555,6 +570,47 @@ ipcMain.handle('ramgs:selectOutputDir', async () => {
     return { canceled: false, dirPath: result.filePaths[0] };
 });
 
+// ── VS Code 启动 IPC ──
+ipcMain.handle('vscode:open', async () => {
+    try {
+        const vscodeExe = getVscodeExePath();
+        if (!vscodeExe) {
+            return { success: false, error: 'VSCode/Code.exe not found' };
+        }
+
+        const apiDir = getDeviceApiDir();
+        if (!fs.existsSync(apiDir)) {
+            fs.mkdirSync(apiDir, { recursive: true });
+        }
+
+        // Configure VS Code to use embedded Python interpreter
+        const vscodeSettingsDir = path.join(apiDir, '.vscode');
+        if (!fs.existsSync(vscodeSettingsDir)) {
+            fs.mkdirSync(vscodeSettingsDir, { recursive: true });
+        }
+
+        const settingsFile = path.join(vscodeSettingsDir, 'settings.json');
+        const pythonPath = PYTHON_PATH.replace(/\\/g, '/');
+        let settings = {};
+        if (fs.existsSync(settingsFile)) {
+            try {
+                settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
+            } catch (e) {
+                settings = {};
+            }
+        }
+        settings['python.defaultInterpreterPath'] = pythonPath;
+        fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 4), 'utf-8');
+
+        const child = spawn(vscodeExe, [apiDir], { detached: true, stdio: 'ignore' });
+        child.unref();
+
+        return { success: true };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
 // 窗口创建：注册 preload
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -648,6 +704,8 @@ function buildAppMenu() {
                 { label: '加载符号表...', click: () => sendToRenderer('menu:command', 'ramgs:load') },
                 { label: '连接设备...', click: () => sendToRenderer('menu:command', 'ramgs:connect') },
                 { label: '断开设备', click: () => sendToRenderer('menu:command', 'ramgs:disconnect') },
+                { type: 'separator' },
+                { label: 'VS Code (device_api)', click: () => sendToRenderer('menu:command', 'tools:openVscode') },
             ],
         },
         {
