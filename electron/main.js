@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn, spawnSync } = require('child_process');
+const { spawn } = require('child_process');
 const { CustomModulesStore } = require('./custom-modules-store');
 const { AiClient } = require('./ai-client');
 const { AiSettingsStore } = require('./ai-settings-store');
@@ -16,6 +16,29 @@ let customModulesStore = null;
 let aiClient = null;
 let aiSettingsStore = null;
 let aiConversationsStore = null;
+
+function getEmbeddedPythonPath() {
+    const devPath = path.join(__dirname, '..', 'python-embedded', 'python.exe');
+    const prodPath = path.join(process.resourcesPath || '', 'python-embedded', 'python.exe');
+    if (fs.existsSync(prodPath)) return prodPath;
+    if (fs.existsSync(devPath)) return devPath;
+    return 'python';  // fallback to system Python
+}
+
+const PYTHON_PATH = getEmbeddedPythonPath();
+
+/**
+ * Build a clean env for spawning Python processes.
+ * Removes PYTHONHOME and PYTHONPATH to prevent system Python
+ * environment variables from interfering with the embedded one.
+ */
+function buildPythonEnv(extra) {
+    const env = { ...process.env };
+    delete env.PYTHONHOME;
+    delete env.PYTHONPATH;
+    if (extra) Object.assign(env, extra);
+    return env;
+}
 
 function getRamgsDir() {
     return path.join(__dirname, '..', 'ramgs');
@@ -35,32 +58,6 @@ function ensureRamgsInPath() {
     }
 }
 
-function ensureTestkitInstalled() {
-    const testkitDir = path.join(__dirname, '..', 'testkit');
-    if (!fs.existsSync(path.join(testkitDir, 'setup.py'))) return;
-
-    const check = spawnSync('python', ['-c', 'import ramgs'], {
-        stdio: 'ignore',
-        timeout: 5000,
-    });
-    if (check.status === 0) return; // already installed
-
-    const proc = spawn('pip', ['install', '-e', testkitDir], {
-        env: { ...process.env },
-    });
-    proc.stdout.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
-    proc.stderr.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
-    proc.on('close', (code) => {
-        if (code === 0) {
-            sendToRenderer('terminal:output',
-                '\r\n\x1b[32mramgs package installed successfully.\x1b[0m\r\n');
-        } else {
-            sendToRenderer('terminal:output',
-                '\r\n\x1b[31mFailed to install ramgs package (exit code: ' + code + ').\x1b[0m\r\n');
-        }
-    });
-}
-
 function sendToRenderer(channel, data) {
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send(channel, data);
@@ -74,9 +71,9 @@ ipcMain.handle('python:run', async (event, filePath) => {
     const cwd = path.dirname(filePath);
 
     return new Promise((resolve) => {
-        pythonProcess = spawn('python', ['-u', filePath], {
+        pythonProcess = spawn(PYTHON_PATH, ['-u', filePath], {
             cwd: cwd,
-            env: { ...process.env, PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' },
+            env: buildPythonEnv({ PYTHONIOENCODING: 'utf-8', PYTHONUTF8: '1' }),
         });
 
         sendToRenderer('process:start', { source: 'python' });
@@ -573,13 +570,12 @@ function createWindow() {
 
     mainWindow.loadFile(path.join(__dirname, '..', 'test', 'simple_v2.html'));
 
-    // 页面加载完成后推送自定义模块数据 & 安装 testkit
+    // 页面加载完成后推送自定义模块数据
     mainWindow.webContents.on('did-finish-load', () => {
         if (customModulesStore) {
             const modules = customModulesStore.getAll();
             sendToRenderer('custom-modules:reload', modules);
         }
-        ensureTestkitInstalled();
     });
 
     // 开发时可取消注释以打开 DevTools
