@@ -693,6 +693,165 @@
         .ai-settings-cancel:hover { background: #4d4d5d; }
         .ai-settings-save { background: #2563eb; color: white; }
         .ai-settings-save:hover { background: #1d4ed8; }
+
+        /* ── Status Bar ── */
+        #status-bar {
+            display: none;
+            align-items: center;
+            padding: 0 12px;
+            height: 24px;
+            background: #f1f5f9;
+            border-top: 1px solid #e2e8f0;
+            flex-shrink: 0;
+            font-size: 11px;
+            color: #64748b;
+            gap: 12px;
+            font-family: inherit;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
+            flex-shrink: 0;
+        }
+        .status-dot.connected { background: #22c55e; }
+        .status-text { white-space: nowrap; }
+        .status-sep { color: #cbd5e1; }
+        .status-info { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* ── ramgs toolbar buttons ── */
+        #ramgs-toolbar {
+            display: none;
+            align-items: center;
+            gap: 2px;
+            margin-left: 4px;
+        }
+        .ramgs-tool-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 5px 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: transparent;
+            color: #64748b;
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        .ramgs-tool-btn:hover {
+            background: #f1f5f9;
+            color: #334155;
+            border-color: #cbd5e1;
+        }
+        .ramgs-tool-btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+
+        /* ── ramgs dialog overlays ── */
+        .ramgs-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .ramgs-overlay.open { display: flex; }
+        .ramgs-dialog {
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 24px;
+            width: 460px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #1e293b;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.2);
+        }
+        .ramgs-dialog h3 {
+            margin: 0 0 16px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .ramgs-field {
+            margin-bottom: 14px;
+        }
+        .ramgs-field label {
+            display: block;
+            font-size: 12px;
+            color: #64748b;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .ramgs-field select,
+        .ramgs-field input {
+            width: 100%;
+            background: #f8fafc;
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .ramgs-field select:focus,
+        .ramgs-field input:focus { outline: none; border-color: #3b82f6; }
+        .ramgs-file-picker {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .ramgs-file-picker input {
+            flex: 1;
+        }
+        .ramgs-file-picker button {
+            padding: 8px 14px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            color: #334155;
+        }
+        .ramgs-file-picker button:hover { background: #e2e8f0; }
+        .ramgs-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 18px;
+        }
+        .ramgs-actions button {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+            font-weight: 500;
+        }
+        .ramgs-btn-cancel { background: #f1f5f9; color: #64748b; }
+        .ramgs-btn-cancel:hover { background: #e2e8f0; }
+        .ramgs-btn-primary { background: #3b82f6; color: white; }
+        .ramgs-btn-primary:hover { background: #2563eb; }
+        .ramgs-btn-danger { background: #ef4444; color: white; }
+        .ramgs-btn-danger:hover { background: #dc2626; }
+        .ramgs-inline-btn {
+            padding: 6px 10px;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+            color: #334155;
+        }
+        .ramgs-inline-btn:hover { background: #e2e8f0; }
     </style>
 </head>
 <body>
@@ -776,6 +935,31 @@
         </svg>
         AI 助手
     </button>
+    <div id="ramgs-toolbar">
+        <button class="ramgs-tool-btn" title="生成符号表" onclick="showCreateDialog()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M4 1h5.5L13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
+                <polyline points="9,1 9,5 13,5"/>
+                <line x1="6" y1="9" x2="10" y2="9"/>
+                <line x1="8" y1="7" x2="8" y2="11"/>
+            </svg>
+            生成
+        </button>
+        <button class="ramgs-tool-btn" title="加载符号表" onclick="showLoadDialog()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M2 13V4a1 1 0 0 1 1-1h3l2 2h5a1 1 0 0 1 1 1v1"/>
+                <path d="M2 13l1.5-5h11l-1.5 5H2z"/>
+            </svg>
+            加载
+        </button>
+        <button class="ramgs-tool-btn" title="连接设备" onclick="showConnectDialog()">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                <circle cx="8" cy="8" r="3"/>
+                <path d="M8 1v2M8 13v2M1 8h2M13 8h2"/>
+            </svg>
+            连接
+        </button>
+    </div>
 </div>
 
 <div id="main-content">
@@ -826,6 +1010,100 @@
         </div>
     </div>
 </div>
+</div>
+
+<!-- Status Bar -->
+<div id="status-bar">
+    <span class="status-dot" id="status-dot"></span>
+    <span class="status-text" id="status-text">未连接</span>
+    <span class="status-sep" id="status-sep1" style="display:none;">|</span>
+    <span class="status-info" id="status-port"></span>
+    <span class="status-sep" id="status-sep2" style="display:none;">|</span>
+    <span class="status-info" id="status-baud"></span>
+    <span class="status-sep" id="status-sep3" style="display:none;">|</span>
+    <span class="status-info" id="status-symbols"></span>
+</div>
+
+<!-- ramgs: Generate Symbols Dialog -->
+<div class="ramgs-overlay" id="ramgs-create-overlay" onclick="closeRamgsOverlay(event, 'ramgs-create-overlay')">
+    <div class="ramgs-dialog">
+        <h3>生成符号表</h3>
+        <div class="ramgs-field">
+            <label>ELF / ABS / AXF 文件</label>
+            <div class="ramgs-file-picker">
+                <input type="text" id="ramgs-elf-path" readonly placeholder="选择 ELF 文件...">
+                <button onclick="pickElfFile()">浏览...</button>
+            </div>
+        </div>
+        <div class="ramgs-field">
+            <label>输出目录</label>
+            <div class="ramgs-file-picker">
+                <input type="text" id="ramgs-output-dir" readonly placeholder="选择输出目录...">
+                <button onclick="pickOutputDir()">浏览...</button>
+            </div>
+        </div>
+        <div class="ramgs-actions">
+            <button class="ramgs-btn-cancel" onclick="closeCreateDialog()">取消</button>
+            <button class="ramgs-btn-primary" onclick="doCreateSymbols()">生成</button>
+        </div>
+    </div>
+</div>
+
+<!-- ramgs: Load Symbols Dialog -->
+<div class="ramgs-overlay" id="ramgs-load-overlay" onclick="closeRamgsOverlay(event, 'ramgs-load-overlay')">
+    <div class="ramgs-dialog">
+        <h3>加载符号表</h3>
+        <div class="ramgs-field">
+            <label>符号表文件 (JSON)</label>
+            <div class="ramgs-file-picker">
+                <input type="text" id="ramgs-symbols-path" readonly placeholder="选择符号表 JSON 文件...">
+                <button onclick="pickSymbolsFile()">浏览...</button>
+            </div>
+        </div>
+        <div class="ramgs-actions">
+            <button class="ramgs-btn-cancel" onclick="closeLoadDialog()">取消</button>
+            <button class="ramgs-btn-primary" onclick="doLoadSymbols()">加载</button>
+        </div>
+    </div>
+</div>
+
+<!-- ramgs: Connect Device Dialog -->
+<div class="ramgs-overlay" id="ramgs-connect-overlay" onclick="closeRamgsOverlay(event, 'ramgs-connect-overlay')">
+    <div class="ramgs-dialog">
+        <h3>连接设备</h3>
+        <div class="ramgs-field">
+            <label>端口</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <select id="ramgs-port" style="flex:1;"></select>
+                <button class="ramgs-inline-btn" onclick="refreshPorts()">刷新</button>
+            </div>
+        </div>
+        <div class="ramgs-field">
+            <label>波特率</label>
+            <select id="ramgs-baud">
+                <option value="9600">9600</option>
+                <option value="19200">19200</option>
+                <option value="38400">38400</option>
+                <option value="57600">57600</option>
+                <option value="115200" selected>115200</option>
+                <option value="230400">230400</option>
+                <option value="460800">460800</option>
+                <option value="921600">921600</option>
+            </select>
+        </div>
+        <div class="ramgs-field">
+            <label>字节序</label>
+            <select id="ramgs-endian">
+                <option value="little">小端 (Little Endian)</option>
+                <option value="big">大端 (Big Endian)</option>
+            </select>
+        </div>
+        <div class="ramgs-actions">
+            <button class="ramgs-btn-cancel" onclick="closeConnectDialog()">取消</button>
+            <button class="ramgs-btn-danger" id="ramgs-disconnect-btn" style="display:none;" onclick="doDisconnect()">断开</button>
+            <button class="ramgs-btn-primary" id="ramgs-connect-btn" onclick="doConnect()">连接</button>
+        </div>
+    </div>
 </div>
 
 <!-- AI 设置对话框 -->
@@ -1358,6 +1636,12 @@
         if (moduleManagerBtn) moduleManagerBtn.style.display = 'flex';
         if (aiChatBtn) aiChatBtn.style.display = 'flex';
 
+        // ramgs toolbar + status bar
+        var ramgsToolbar = document.getElementById('ramgs-toolbar');
+        var statusBar = document.getElementById('status-bar');
+        if (ramgsToolbar) ramgsToolbar.style.display = 'flex';
+        if (statusBar) statusBar.style.display = 'flex';
+
         // 监听菜单命令
         window.electronAPI.onMenuCommand(function(command) {
             switch (command) {
@@ -1374,6 +1658,10 @@
                 case 'tools:blockFactory': openBlockFactory(); break;
                 case 'tools:moduleManager': openModuleManager(); break;
                 case 'tools:aiAssistant': toggleAiChat(); break;
+                case 'ramgs:create': showCreateDialog(); break;
+                case 'ramgs:load': showLoadDialog(); break;
+                case 'ramgs:connect': showConnectDialog(); break;
+                case 'ramgs:disconnect': doDisconnect(); break;
             }
         });
 
@@ -1391,6 +1679,9 @@
 
         // 初始化 AI 助手
         initAiChat();
+
+        // 初始化 ramgs 状态
+        refreshRamgsStatus();
     }
 
     // ══════════════════════════════════════════════════
@@ -1762,6 +2053,210 @@
             clearBtn.style.display = 'none';
         }
     }
+
+    // ══════════════════════════════════════════════════
+    // RAMViewer (ramgs) Tool Integration
+    // ══════════════════════════════════════════════════
+
+    function refreshRamgsStatus() {
+        if (!window.electronAPI || !window.electronAPI.ramgsStatus) return;
+        window.electronAPI.ramgsStatus().then(function(status) {
+            var dot = document.getElementById('status-dot');
+            var text = document.getElementById('status-text');
+            var portEl = document.getElementById('status-port');
+            var baudEl = document.getElementById('status-baud');
+            var symbolsEl = document.getElementById('status-symbols');
+            var sep1 = document.getElementById('status-sep1');
+            var sep2 = document.getElementById('status-sep2');
+            var sep3 = document.getElementById('status-sep3');
+
+            if (status.connected) {
+                dot.classList.add('connected');
+                text.textContent = '已连接';
+                portEl.textContent = status.port || '';
+                baudEl.textContent = status.baud ? (status.baud + ' baud') : '';
+                symbolsEl.textContent = status.symbols ? ('符号表: ' + status.symbols) : '';
+                sep1.style.display = status.port ? '' : 'none';
+                sep2.style.display = status.baud ? '' : 'none';
+                sep3.style.display = status.symbols ? '' : 'none';
+            } else {
+                dot.classList.remove('connected');
+                text.textContent = '未连接';
+                portEl.textContent = '';
+                baudEl.textContent = '';
+                symbolsEl.textContent = status.symbols ? ('符号表: ' + status.symbols) : '';
+                sep1.style.display = 'none';
+                sep2.style.display = 'none';
+                sep3.style.display = status.symbols ? '' : 'none';
+            }
+
+            // Update disconnect button visibility in connect dialog
+            var disconnectBtn = document.getElementById('ramgs-disconnect-btn');
+            if (disconnectBtn) disconnectBtn.style.display = status.connected ? '' : 'none';
+        });
+    }
+
+    // ── Generate Symbols Dialog ──
+    function showCreateDialog() {
+        document.getElementById('ramgs-elf-path').value = '';
+        document.getElementById('ramgs-output-dir').value = '';
+        document.getElementById('ramgs-create-overlay').classList.add('open');
+    }
+
+    function closeCreateDialog() {
+        document.getElementById('ramgs-create-overlay').classList.remove('open');
+    }
+
+    function pickElfFile() {
+        if (!window.electronAPI) return;
+        window.electronAPI.ramgsSelectElf().then(function(result) {
+            if (result.canceled) return;
+            document.getElementById('ramgs-elf-path').value = result.filePath;
+        });
+    }
+
+    function pickOutputDir() {
+        if (!window.electronAPI) return;
+        window.electronAPI.ramgsSelectOutputDir().then(function(result) {
+            if (result.canceled) return;
+            document.getElementById('ramgs-output-dir').value = result.dirPath;
+        });
+    }
+
+    function doCreateSymbols() {
+        var elfPath = document.getElementById('ramgs-elf-path').value;
+        var outputDir = document.getElementById('ramgs-output-dir').value;
+        if (!elfPath) { alert('请选择 ELF 文件'); return; }
+        if (!outputDir) { alert('请选择输出目录'); return; }
+
+        closeCreateDialog();
+        showTerminal();
+        if (term) term.write('\x1b[90m--- ramgs create: generating symbols ---\x1b[0m\r\n');
+
+        window.electronAPI.ramgsCreate(elfPath, outputDir).then(function(result) {
+            if (result.exitCode === 0) {
+                if (term) term.write('\x1b[32m--- symbols generated successfully ---\x1b[0m\r\n');
+            } else {
+                if (term) term.write('\x1b[31m--- symbol generation failed (exit code: ' + result.exitCode + ') ---\x1b[0m\r\n');
+            }
+            refreshRamgsStatus();
+        });
+    }
+
+    // ── Load Symbols Dialog ──
+    function showLoadDialog() {
+        document.getElementById('ramgs-symbols-path').value = '';
+        document.getElementById('ramgs-load-overlay').classList.add('open');
+    }
+
+    function closeLoadDialog() {
+        document.getElementById('ramgs-load-overlay').classList.remove('open');
+    }
+
+    function pickSymbolsFile() {
+        if (!window.electronAPI) return;
+        window.electronAPI.ramgsSelectSymbols().then(function(result) {
+            if (result.canceled) return;
+            document.getElementById('ramgs-symbols-path').value = result.filePath;
+        });
+    }
+
+    function doLoadSymbols() {
+        var symbolsPath = document.getElementById('ramgs-symbols-path').value;
+        if (!symbolsPath) { alert('请选择符号表文件'); return; }
+
+        closeLoadDialog();
+        showTerminal();
+        if (term) term.write('\x1b[90m--- ramgs load: loading symbols ---\x1b[0m\r\n');
+
+        window.electronAPI.ramgsLoad(symbolsPath).then(function(result) {
+            if (result.exitCode === 0) {
+                if (term) term.write('\x1b[32m--- symbols loaded successfully ---\x1b[0m\r\n');
+            } else {
+                if (term) term.write('\x1b[31m--- symbol loading failed (exit code: ' + result.exitCode + ') ---\x1b[0m\r\n');
+            }
+            refreshRamgsStatus();
+        });
+    }
+
+    // ── Connect Device Dialog ──
+    function showConnectDialog() {
+        document.getElementById('ramgs-connect-overlay').classList.add('open');
+        refreshPorts();
+        refreshRamgsStatus();
+    }
+
+    function closeConnectDialog() {
+        document.getElementById('ramgs-connect-overlay').classList.remove('open');
+    }
+
+    function refreshPorts() {
+        if (!window.electronAPI || !window.electronAPI.ramgsPorts) return;
+        var selectEl = document.getElementById('ramgs-port');
+        selectEl.innerHTML = '<option value="">加载中...</option>';
+        window.electronAPI.ramgsPorts().then(function(result) {
+            selectEl.innerHTML = '';
+            if (!result.success || result.ports.length === 0) {
+                selectEl.innerHTML = '<option value="">未找到端口</option>';
+                return;
+            }
+            result.ports.forEach(function(p) {
+                var opt = document.createElement('option');
+                opt.value = p.name;
+                opt.textContent = p.name + (p.description ? ' - ' + p.description : '');
+                selectEl.appendChild(opt);
+            });
+        });
+    }
+
+    function doConnect() {
+        var port = document.getElementById('ramgs-port').value;
+        var baud = document.getElementById('ramgs-baud').value;
+        var endian = document.getElementById('ramgs-endian').value;
+        if (!port) { alert('请选择端口'); return; }
+
+        closeConnectDialog();
+        showTerminal();
+        if (term) term.write('\x1b[90m--- ramgs open: connecting to ' + port + ' @ ' + baud + ' ---\x1b[0m\r\n');
+
+        window.electronAPI.ramgsOpen(port, baud, endian).then(function(result) {
+            if (result.exitCode === 0) {
+                if (term) term.write('\x1b[32m--- device connected ---\x1b[0m\r\n');
+            } else {
+                if (term) term.write('\x1b[31m--- connection failed (exit code: ' + result.exitCode + ') ---\x1b[0m\r\n');
+            }
+            refreshRamgsStatus();
+        });
+    }
+
+    function doDisconnect() {
+        closeConnectDialog();
+        showTerminal();
+        if (term) term.write('\x1b[90m--- ramgs close: disconnecting ---\x1b[0m\r\n');
+
+        window.electronAPI.ramgsClose().then(function(result) {
+            if (result.exitCode === 0) {
+                if (term) term.write('\x1b[32m--- device disconnected ---\x1b[0m\r\n');
+            } else {
+                if (term) term.write('\x1b[31m--- disconnect failed (exit code: ' + result.exitCode + ') ---\x1b[0m\r\n');
+            }
+            refreshRamgsStatus();
+        });
+    }
+
+    function closeRamgsOverlay(e, id) {
+        if (e.target === document.getElementById(id)) {
+            document.getElementById(id).classList.remove('open');
+        }
+    }
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.ramgs-overlay.open').forEach(function(overlay) {
+                overlay.classList.remove('open');
+            });
+        }
+    });
 </script>
 </body>
 </html>

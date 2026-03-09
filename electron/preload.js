@@ -42,6 +42,17 @@ contextBridge.exposeInMainWorld('electronAPI', {
     aiClearConversation: (id) => ipcRenderer.invoke('ai:clearConversation', id),
     aiSelectApiDoc: () => ipcRenderer.invoke('ai:selectApiDoc'),
 
+    // RAMViewer (ramgs) 工具
+    ramgsPorts: () => ipcRenderer.invoke('ramgs:ports'),
+    ramgsStatus: () => ipcRenderer.invoke('ramgs:status'),
+    ramgsCreate: (elfPath, outputDir) => ipcRenderer.invoke('ramgs:create', { elfPath, outputDir }),
+    ramgsLoad: (symbolsPath) => ipcRenderer.invoke('ramgs:load', symbolsPath),
+    ramgsOpen: (port, baud, endian) => ipcRenderer.invoke('ramgs:open', { port, baud, endian }),
+    ramgsClose: () => ipcRenderer.invoke('ramgs:close'),
+    ramgsSelectElf: () => ipcRenderer.invoke('ramgs:selectElf'),
+    ramgsSelectSymbols: () => ipcRenderer.invoke('ramgs:selectSymbols'),
+    ramgsSelectOutputDir: () => ipcRenderer.invoke('ramgs:selectOutputDir'),
+
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {
         const fn = (_, data) => callback(data);

@@ -17,6 +17,24 @@ let aiClient = null;
 let aiSettingsStore = null;
 let aiConversationsStore = null;
 
+function getRamgsDir() {
+    return path.join(__dirname, '..', 'ramgs');
+}
+
+function ensureRamgsInPath() {
+    const ramgsDir = getRamgsDir();
+    const envPath = process.env.PATH || process.env.Path || '';
+    const sep = process.platform === 'win32' ? ';' : ':';
+    const dirs = envPath.split(sep);
+    const normalizedRamgs = path.normalize(ramgsDir).toLowerCase();
+    const found = dirs.some(function(d) {
+        return path.normalize(d).toLowerCase() === normalizedRamgs;
+    });
+    if (!found) {
+        process.env.PATH = ramgsDir + sep + envPath;
+    }
+}
+
 function sendToRenderer(channel, data) {
     if (mainWindow && !mainWindow.isDestroyed()) {
         mainWindow.webContents.send(channel, data);
@@ -358,6 +376,162 @@ ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage, editor
     return result;
 });
 
+// ── RAMViewer (ramgs) IPC ──
+function spawnRamgs(args, label) {
+    const ramgsDir = getRamgsDir();
+    return new Promise((resolve) => {
+        const child = spawn('ramgs.exe', args, { cwd: ramgsDir });
+
+        sendToRenderer('process:start', { source: 'ramgs' });
+        child.stdout.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
+        child.stderr.on('data', (d) =>
+            sendToRenderer('terminal:output', `\x1b[31m${d.toString()}\x1b[0m`));
+        child.on('close', (exitCode) => {
+            sendToRenderer('process:exit', { exitCode, source: 'ramgs' });
+            resolve({ exitCode });
+        });
+        child.on('error', (err) => {
+            sendToRenderer('terminal:output',
+                `\x1b[31m${label} failed: ${err.message}\r\n\x1b[0m`);
+            resolve({ exitCode: -1 });
+        });
+    });
+}
+
+ipcMain.handle('ramgs:ports', async () => {
+    const ramgsDir = getRamgsDir();
+    return new Promise((resolve) => {
+        const child = spawn('ramgs.exe', ['ports'], { cwd: ramgsDir });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', (d) => { stdout += d.toString(); });
+        child.stderr.on('data', (d) => { stderr += d.toString(); });
+        child.on('close', (exitCode) => {
+            if (exitCode !== 0) {
+                resolve({ success: false, ports: [], error: stderr || stdout });
+                return;
+            }
+            // Parse "ramgs ports" output: each line like "COM3 - USB Serial Device"
+            const ports = [];
+            stdout.split('\n').forEach((line) => {
+                line = line.trim();
+                if (!line) return;
+                const dashIdx = line.indexOf(' - ');
+                if (dashIdx > 0) {
+                    ports.push({ name: line.substring(0, dashIdx).trim(), description: line.substring(dashIdx + 3).trim() });
+                } else {
+                    ports.push({ name: line, description: '' });
+                }
+            });
+            resolve({ success: true, ports });
+        });
+        child.on('error', (err) => {
+            resolve({ success: false, ports: [], error: err.message });
+        });
+    });
+});
+
+ipcMain.handle('ramgs:status', async () => {
+    const ramgsDir = getRamgsDir();
+    return new Promise((resolve) => {
+        const child = spawn('ramgs.exe', ['status'], { cwd: ramgsDir });
+        let stdout = '';
+        let stderr = '';
+        child.stdout.on('data', (d) => { stdout += d.toString(); });
+        child.stderr.on('data', (d) => { stderr += d.toString(); });
+        child.on('close', (exitCode) => {
+            const status = { connected: false, port: '', baud: '', endian: '', symbols: '' };
+            if (exitCode !== 0) {
+                status.error = stderr || ('ramgs status exited with code ' + exitCode);
+                resolve(status);
+                return;
+            }
+            // Parse status output into structured object
+            stdout.split('\n').forEach((line) => {
+                line = line.trim();
+                if (/^connected\s*[:=]\s*true/i.test(line)) status.connected = true;
+                if (/^connected\s*[:=]\s*false/i.test(line)) status.connected = false;
+                const portMatch = line.match(/^port\s*[:=]\s*(.+)/i);
+                if (portMatch) status.port = portMatch[1].trim();
+                const baudMatch = line.match(/^baud\s*[:=]\s*(.+)/i);
+                if (baudMatch) status.baud = baudMatch[1].trim();
+                const endianMatch = line.match(/^endian\s*[:=]\s*(.+)/i);
+                if (endianMatch) status.endian = endianMatch[1].trim();
+                const symbolsMatch = line.match(/^symbols\s*[:=]\s*(.+)/i);
+                if (symbolsMatch) status.symbols = symbolsMatch[1].trim();
+            });
+            resolve(status);
+        });
+        child.on('error', (err) => {
+            resolve({ connected: false, port: '', baud: '', endian: '', symbols: '', error: err.message });
+        });
+    });
+});
+
+ipcMain.handle('ramgs:create', async (_, { elfPath, outputDir }) => {
+    const outputPath = path.join(outputDir, 'symbols.json');
+    return spawnRamgs(['create', elfPath, '-o', outputPath], 'ramgs create');
+});
+
+ipcMain.handle('ramgs:load', async (_, symbolsPath) => {
+    return spawnRamgs(['load', symbolsPath], 'ramgs load');
+});
+
+ipcMain.handle('ramgs:open', async (_, { port, baud, endian }) => {
+    // Validate port: must match COM port or /dev/ device name
+    if (!/^(COM\d+|\/dev\/[a-zA-Z0-9._/-]+)$/i.test(port)) {
+        return { exitCode: -1, error: 'Invalid port name' };
+    }
+    // Validate baud: must be a number
+    if (!/^\d+$/.test(String(baud))) {
+        return { exitCode: -1, error: 'Invalid baud rate' };
+    }
+    // Validate endian: whitelist
+    if (endian && endian !== 'little' && endian !== 'big') {
+        return { exitCode: -1, error: 'Invalid endian value' };
+    }
+
+    const args = ['open', '--name', port, '--baud', String(baud)];
+    if (endian) args.push('--endian', endian);
+    return spawnRamgs(args, 'ramgs open');
+});
+
+ipcMain.handle('ramgs:close', async () => {
+    return spawnRamgs(['close'], 'ramgs close');
+});
+
+ipcMain.handle('ramgs:selectElf', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        filters: [
+            { name: 'ELF/ABS/AXF/OUT', extensions: ['elf', 'abs', 'axf', 'out'] },
+            { name: 'All Files', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    return { canceled: false, filePath: result.filePaths[0] };
+});
+
+ipcMain.handle('ramgs:selectSymbols', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        filters: [
+            { name: 'JSON', extensions: ['json'] },
+            { name: 'All Files', extensions: ['*'] },
+        ],
+        properties: ['openFile'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    return { canceled: false, filePath: result.filePaths[0] };
+});
+
+ipcMain.handle('ramgs:selectOutputDir', async () => {
+    const result = await dialog.showOpenDialog(mainWindow, {
+        properties: ['openDirectory'],
+    });
+    if (result.canceled || result.filePaths.length === 0) return { canceled: true };
+    return { canceled: false, dirPath: result.filePaths[0] };
+});
+
 // 窗口创建：注册 preload
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -446,6 +620,11 @@ function buildAppMenu() {
                 { label: '自定义模块管理...', click: () => sendToRenderer('menu:command', 'tools:moduleManager') },
                 { type: 'separator' },
                 { label: 'AI 助手', accelerator: 'CmdOrCtrl+Shift+A', click: () => sendToRenderer('menu:command', 'tools:aiAssistant') },
+                { type: 'separator' },
+                { label: '生成符号表...', click: () => sendToRenderer('menu:command', 'ramgs:create') },
+                { label: '加载符号表...', click: () => sendToRenderer('menu:command', 'ramgs:load') },
+                { label: '连接设备...', click: () => sendToRenderer('menu:command', 'ramgs:connect') },
+                { label: '断开设备', click: () => sendToRenderer('menu:command', 'ramgs:disconnect') },
             ],
         },
         {
@@ -474,6 +653,7 @@ app.whenReady().then(() => {
     aiClient = new AiClient();
     aiSettingsStore = new AiSettingsStore(userData);
     aiConversationsStore = new AiConversationsStore(userData);
+    ensureRamgsInPath();
     buildAppMenu();
     createWindow();
 
