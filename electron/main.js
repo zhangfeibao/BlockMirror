@@ -299,7 +299,7 @@ ipcMain.handle('ai:clearConversation', async (_, id) => {
     return aiConversationsStore.clearMessages(id);
 });
 
-ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage }) => {
+ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage, editorCode }) => {
     const settings = aiSettingsStore.getAll();
 
     // Save user message to conversation
@@ -312,12 +312,18 @@ ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage }) => {
     // Build messages (exclude system prompt - it's sent separately)
     const messages = conv.messages.map(m => ({ role: m.role, content: m.content }));
 
+    // Build dynamic system prompt: base prompt + current editor code
+    let systemPrompt = settings.systemPrompt || '';
+    if (editorCode && editorCode.trim()) {
+        systemPrompt += '\n\n--- Current code in the editor ---\n```python\n' + editorCode + '\n```\nWhen the user asks to modify or improve code, base your changes on the code above.';
+    }
+
     const result = await aiClient.sendMessage(messages, {
         model: settings.model,
         authToken: settings.authToken,
         aigcUser: settings.aigcUser,
         effort: settings.effort,
-        systemPrompt: settings.systemPrompt,
+        systemPrompt: systemPrompt,
     });
 
     // Save assistant response to conversation

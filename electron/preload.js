@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     },
 
     // AI 助手
-    aiSendMessage: (conversationId, userMessage) => ipcRenderer.invoke('ai:sendMessage', { conversationId, userMessage }),
+    aiSendMessage: (conversationId, userMessage, editorCode) => ipcRenderer.invoke('ai:sendMessage', { conversationId, userMessage, editorCode }),
     aiGetSettings: () => ipcRenderer.invoke('ai:getSettings'),
     aiSaveSettings: (data) => ipcRenderer.invoke('ai:saveSettings', data),
     aiGetConversations: () => ipcRenderer.invoke('ai:getConversations'),

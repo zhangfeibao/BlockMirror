@@ -1511,7 +1511,10 @@
         document.getElementById('ai-messages').appendChild(loadingEl);
         scrollMessagesToBottom();
 
-        window.electronAPI.aiSendMessage(aiState.currentConversationId, text).then(function(result) {
+        // Attach current editor code as context
+        var editorCode = editor.getCode() || '';
+
+        window.electronAPI.aiSendMessage(aiState.currentConversationId, text, editorCode).then(function(result) {
             // Remove loading indicator
             if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
 
