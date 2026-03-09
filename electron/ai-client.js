@@ -1,5 +1,4 @@
 const https = require('https');
-const url = require('url');
 
 const API_BASE = 'https://aimpapi.midea.com';
 const GPT5_PATH = '/t-aigc/mip-chat-app/openai/standard/v1/chat/completions';
@@ -127,7 +126,7 @@ class AiClient {
 
     _request(apiPath, bizId, authToken, aigcUser, body) {
         return new Promise((resolve, reject) => {
-            const parsed = url.parse(API_BASE);
+            const parsed = new URL(API_BASE);
             const postData = JSON.stringify(body);
 
             const options = {
