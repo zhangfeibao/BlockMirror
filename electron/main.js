@@ -40,10 +40,6 @@ function buildPythonEnv(extra) {
     return env;
 }
 
-function getRamgsDir() {
-    return path.join(__dirname, '..', 'ramgs');
-}
-
 function getVscodeExePath() {
     const devPath = path.join(__dirname, '..', 'VSCode', 'Code.exe');
     const prodPath = path.join(process.resourcesPath || '', 'VSCode', 'Code.exe');
@@ -57,20 +53,6 @@ function getDeviceApiDir() {
     const prodPath = path.join(process.resourcesPath || '', 'device_api');
     if (fs.existsSync(prodPath)) return prodPath;
     return devPath;
-}
-
-function ensureRamgsInPath() {
-    const ramgsDir = getRamgsDir();
-    const envPath = process.env.PATH || process.env.Path || '';
-    const sep = process.platform === 'win32' ? ';' : ':';
-    const dirs = envPath.split(sep);
-    const normalizedRamgs = path.normalize(ramgsDir).toLowerCase();
-    const found = dirs.some(function(d) {
-        return path.normalize(d).toLowerCase() === normalizedRamgs;
-    });
-    if (!found) {
-        process.env.PATH = ramgsDir + sep + envPath;
-    }
 }
 
 function sendToRenderer(channel, data) {
@@ -416,9 +398,10 @@ ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage, editor
 
 // ── RAMViewer (ramgs) IPC ──
 function spawnRamgs(args, label) {
-    const ramgsDir = getRamgsDir();
     return new Promise((resolve) => {
-        const child = spawn('ramgs.exe', args, { cwd: ramgsDir });
+        const child = spawn(PYTHON_PATH, ['-m', 'ramgs', ...args], {
+            env: buildPythonEnv()
+        });
 
         sendToRenderer('process:start', { source: 'ramgs' });
         child.stdout.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
@@ -437,9 +420,10 @@ function spawnRamgs(args, label) {
 }
 
 ipcMain.handle('ramgs:ports', async () => {
-    const ramgsDir = getRamgsDir();
     return new Promise((resolve) => {
-        const child = spawn('ramgs.exe', ['ports'], { cwd: ramgsDir });
+        const child = spawn(PYTHON_PATH, ['-m', 'ramgs', 'ports'], {
+            env: buildPythonEnv()
+        });
         let stdout = '';
         let stderr = '';
         child.stdout.on('data', (d) => { stdout += d.toString(); });
@@ -449,14 +433,16 @@ ipcMain.handle('ramgs:ports', async () => {
                 resolve({ success: false, ports: [], error: stderr || stdout });
                 return;
             }
-            // Parse "ramgs ports" output: each line like "COM3 - USB Serial Device"
+            // Parse "ramgs ports" output: each line like "COM1: Huawei Serial Port (COM1)"
             const ports = [];
             stdout.split('\n').forEach((line) => {
                 line = line.trim();
                 if (!line) return;
-                const dashIdx = line.indexOf(' - ');
-                if (dashIdx > 0) {
-                    ports.push({ name: line.substring(0, dashIdx).trim(), description: line.substring(dashIdx + 3).trim() });
+                const colonIdx = line.indexOf(':');
+                if (colonIdx > 0) {
+                    const name = line.substring(0, colonIdx).trim();
+                    const description = line.substring(colonIdx + 1).trim();
+                    ports.push({ name, description });
                 } else {
                     ports.push({ name: line, description: '' });
                 }
@@ -470,9 +456,10 @@ ipcMain.handle('ramgs:ports', async () => {
 });
 
 ipcMain.handle('ramgs:status', async () => {
-    const ramgsDir = getRamgsDir();
     return new Promise((resolve) => {
-        const child = spawn('ramgs.exe', ['status'], { cwd: ramgsDir });
+        const child = spawn(PYTHON_PATH, ['-m', 'ramgs', 'status'], {
+            env: buildPythonEnv()
+        });
         let stdout = '';
         let stderr = '';
         child.stdout.on('data', (d) => { stdout += d.toString(); });
@@ -484,18 +471,24 @@ ipcMain.handle('ramgs:status', async () => {
                 resolve(status);
                 return;
             }
-            // Parse status output into structured object
+            // Parse status output: "Status: Connected", "Port: None", etc.
             stdout.split('\n').forEach((line) => {
                 line = line.trim();
-                if (/^connected\s*[:=]\s*true/i.test(line)) status.connected = true;
-                if (/^connected\s*[:=]\s*false/i.test(line)) status.connected = false;
-                const portMatch = line.match(/^port\s*[:=]\s*(.+)/i);
-                if (portMatch) status.port = portMatch[1].trim();
-                const baudMatch = line.match(/^baud\s*[:=]\s*(.+)/i);
-                if (baudMatch) status.baud = baudMatch[1].trim();
-                const endianMatch = line.match(/^endian\s*[:=]\s*(.+)/i);
+                if (/^Status\s*:\s*Connected/i.test(line)) status.connected = true;
+                if (/^Status\s*:\s*Disconnected/i.test(line)) status.connected = false;
+                const portMatch = line.match(/^Port\s*:\s*(.+)/i);
+                if (portMatch) {
+                    const portValue = portMatch[1].trim();
+                    status.port = (portValue === 'None' || portValue === 'null') ? '' : portValue;
+                }
+                const baudMatch = line.match(/^Baud\s*:\s*(.+)/i);
+                if (baudMatch) {
+                    const baudValue = baudMatch[1].trim();
+                    status.baud = (baudValue === 'None' || baudValue === 'null') ? '' : baudValue;
+                }
+                const endianMatch = line.match(/^Endian\s*:\s*(.+)/i);
                 if (endianMatch) status.endian = endianMatch[1].trim();
-                const symbolsMatch = line.match(/^symbols\s*[:=]\s*(.+)/i);
+                const symbolsMatch = line.match(/^Symbols\s*:\s*(.+)/i);
                 if (symbolsMatch) status.symbols = symbolsMatch[1].trim();
             });
             resolve(status);
@@ -734,7 +727,6 @@ app.whenReady().then(() => {
     aiClient = new AiClient();
     aiSettingsStore = new AiSettingsStore(userData);
     aiConversationsStore = new AiConversationsStore(userData);
-    ensureRamgsInPath();
     buildAppMenu();
     createWindow();
 

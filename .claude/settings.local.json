@@ -11,7 +11,10 @@
       "Bash(true:*)",
       "Bash(grep:*)",
       "Bash(pip show:*)",
-      "Bash(cd \"F:/works_2026/BlockMirror/testkit\" && python setup.py --name --version 2>&1)"
+      "Bash(cd \"F:/works_2026/BlockMirror/testkit\" && python setup.py --name --version 2>&1)",
+      "Bash(cd:*)",
+      "Bash(cd /f/works_2026/BlockMirror && ./python-embedded/python.exe -m ramgs ports 2>&1)",
+      "Bash(cd /f/works_2026/BlockMirror && ./python-embedded/python.exe -m ramgs status 2>&1)"
     ]
   }
 }

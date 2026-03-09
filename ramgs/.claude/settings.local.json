@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(\"F:/works_2026/BlockMirror/python-embedded/python.exe\":*)",
+      "Bash(cd \"F:/works_2026/BlockMirror/testkit/ramgs\" && \"F:/works_2026/BlockMirror/python-embedded/python.exe\" -m pip install -e . 2>&1)"
+    ]
+  }
+}
