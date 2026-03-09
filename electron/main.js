@@ -3,6 +3,9 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { CustomModulesStore } = require('./custom-modules-store');
+const { AiClient } = require('./ai-client');
+const { AiSettingsStore } = require('./ai-settings-store');
+const { AiConversationsStore } = require('./ai-conversations-store');
 
 let mainWindow = null;
 let pythonProcess = null;
@@ -10,6 +13,9 @@ let shellProcess = null;
 let blockFactoryWindow = null;
 let moduleManagerWindow = null;
 let customModulesStore = null;
+let aiClient = null;
+let aiSettingsStore = null;
+let aiConversationsStore = null;
 
 function sendToRenderer(channel, data) {
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -264,6 +270,70 @@ ipcMain.on('custom-modules:changed', () => {
     sendToRenderer('custom-modules:reload', modules);
 });
 
+// ── AI 助手 IPC ──
+ipcMain.handle('ai:getSettings', async () => {
+    return aiSettingsStore.getAll();
+});
+
+ipcMain.handle('ai:saveSettings', async (_, data) => {
+    return aiSettingsStore.update(data);
+});
+
+ipcMain.handle('ai:getConversations', async () => {
+    return aiConversationsStore.getAll();
+});
+
+ipcMain.handle('ai:getConversation', async (_, id) => {
+    return aiConversationsStore.get(id);
+});
+
+ipcMain.handle('ai:createConversation', async (_, title) => {
+    return aiConversationsStore.create(title);
+});
+
+ipcMain.handle('ai:deleteConversation', async (_, id) => {
+    return aiConversationsStore.delete(id);
+});
+
+ipcMain.handle('ai:clearConversation', async (_, id) => {
+    return aiConversationsStore.clearMessages(id);
+});
+
+ipcMain.handle('ai:sendMessage', async (_, { conversationId, userMessage }) => {
+    const settings = aiSettingsStore.getAll();
+
+    // Save user message to conversation
+    aiConversationsStore.addMessage(conversationId, { role: 'user', content: userMessage });
+
+    // Get full conversation for context
+    const conv = aiConversationsStore.get(conversationId);
+    if (!conv) return { content: null, error: 'Conversation not found' };
+
+    // Build messages (exclude system prompt - it's sent separately)
+    const messages = conv.messages.map(m => ({ role: m.role, content: m.content }));
+
+    const result = await aiClient.sendMessage(messages, {
+        model: settings.model,
+        authToken: settings.authToken,
+        aigcUser: settings.aigcUser,
+        effort: settings.effort,
+        systemPrompt: settings.systemPrompt,
+    });
+
+    // Save assistant response to conversation
+    if (result.content) {
+        aiConversationsStore.addMessage(conversationId, { role: 'assistant', content: result.content });
+
+        // Auto-title: if this is the first exchange, use first 30 chars of user message
+        if (conv.messages.length <= 1) {
+            const title = userMessage.substring(0, 40) + (userMessage.length > 40 ? '...' : '');
+            aiConversationsStore.updateTitle(conversationId, title);
+        }
+    }
+
+    return result;
+});
+
 // 窗口创建：注册 preload
 function createWindow() {
     mainWindow = new BrowserWindow({
@@ -350,6 +420,8 @@ function buildAppMenu() {
             submenu: [
                 { label: '自定义积木块...', click: () => sendToRenderer('menu:command', 'tools:blockFactory') },
                 { label: '自定义模块管理...', click: () => sendToRenderer('menu:command', 'tools:moduleManager') },
+                { type: 'separator' },
+                { label: 'AI 助手', accelerator: 'CmdOrCtrl+Shift+A', click: () => sendToRenderer('menu:command', 'tools:aiAssistant') },
             ],
         },
         {
@@ -373,7 +445,11 @@ function buildAppMenu() {
 }
 
 app.whenReady().then(() => {
-    customModulesStore = new CustomModulesStore(app.getPath('userData'));
+    const userData = app.getPath('userData');
+    customModulesStore = new CustomModulesStore(userData);
+    aiClient = new AiClient();
+    aiSettingsStore = new AiSettingsStore(userData);
+    aiConversationsStore = new AiConversationsStore(userData);
     buildAppMenu();
     createWindow();
 

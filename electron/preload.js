@@ -31,6 +31,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
         return () => ipcRenderer.removeListener('custom-modules:reload', fn);
     },
 
+    // AI 助手
+    aiSendMessage: (conversationId, userMessage) => ipcRenderer.invoke('ai:sendMessage', { conversationId, userMessage }),
+    aiGetSettings: () => ipcRenderer.invoke('ai:getSettings'),
+    aiSaveSettings: (data) => ipcRenderer.invoke('ai:saveSettings', data),
+    aiGetConversations: () => ipcRenderer.invoke('ai:getConversations'),
+    aiGetConversation: (id) => ipcRenderer.invoke('ai:getConversation', id),
+    aiCreateConversation: (title) => ipcRenderer.invoke('ai:createConversation', title),
+    aiDeleteConversation: (id) => ipcRenderer.invoke('ai:deleteConversation', id),
+    aiClearConversation: (id) => ipcRenderer.invoke('ai:clearConversation', id),
+
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {
         const fn = (_, data) => callback(data);

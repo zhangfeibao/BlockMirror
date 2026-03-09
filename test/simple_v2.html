@@ -143,6 +143,7 @@
         #editor-wrapper {
             flex: 1;
             min-height: 0;
+            min-width: 0;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -304,6 +305,350 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+
+        /* AI 助手按钮 */
+        #ai-chat-btn {
+            display: none;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            background: transparent;
+            color: #64748b;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            white-space: nowrap;
+            font-family: inherit;
+        }
+        #ai-chat-btn:hover { background: #f1f5f9; color: #334155; border-color: #cbd5e1; }
+        #ai-chat-btn.active { background: #eff6ff; color: #1e40af; border-color: #93c5fd; }
+        #ai-chat-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+        /* 主内容区 flex 行 */
+        #main-content {
+            display: flex;
+            flex: 1;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* AI 聊天面板 */
+        #ai-chat-panel {
+            width: 400px;
+            min-width: 320px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: #1e1e2e;
+            border-left: 1px solid #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        #ai-chat-panel.hidden { display: none; }
+
+        #ai-chat-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #2d2d3d;
+            border-bottom: 1px solid #444;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        #ai-chat-header select {
+            background: #3d3d4d;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+        }
+        .ai-header-btn {
+            background: none;
+            border: 1px solid #555;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: background 0.15s, color 0.15s;
+        }
+        .ai-header-btn:hover { background: #3d3d4d; color: #d1d5db; }
+        #ai-header-spacer { flex: 1; }
+
+        /* 对话列表下拉 */
+        #ai-conv-dropdown {
+            position: relative;
+        }
+        #ai-conv-btn {
+            background: none;
+            border: 1px solid #555;
+            color: #9ca3af;
+            cursor: pointer;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: inherit;
+            max-width: 120px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        #ai-conv-btn:hover { background: #3d3d4d; color: #d1d5db; }
+        #ai-conv-list {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 4px;
+            background: #2d2d3d;
+            border: 1px solid #555;
+            border-radius: 6px;
+            min-width: 240px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 100;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        }
+        #ai-conv-list.open { display: block; }
+        .ai-conv-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            color: #d4d4d4;
+            border-bottom: 1px solid #3d3d4d;
+            gap: 8px;
+        }
+        .ai-conv-item:hover { background: #3d3d4d; }
+        .ai-conv-item.active { background: #3d3d5d; color: #93c5fd; }
+        .ai-conv-item-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .ai-conv-item-delete {
+            color: #6b7280;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 0 4px;
+            line-height: 1;
+        }
+        .ai-conv-item-delete:hover { color: #ef4444; }
+
+        /* 消息区 */
+        #ai-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        #ai-messages::-webkit-scrollbar { width: 6px; }
+        #ai-messages::-webkit-scrollbar-track { background: transparent; }
+        #ai-messages::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+        .ai-msg {
+            max-width: 95%;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+        .ai-msg.user {
+            align-self: flex-end;
+            background: #2563eb;
+            color: #ffffff;
+            border-bottom-right-radius: 4px;
+        }
+        .ai-msg.assistant {
+            align-self: flex-start;
+            background: #2d2d3d;
+            color: #d4d4d4;
+            border-bottom-left-radius: 4px;
+        }
+        .ai-msg.error {
+            align-self: center;
+            background: #451a1a;
+            color: #f87171;
+            font-size: 12px;
+        }
+        .ai-msg.loading {
+            align-self: flex-start;
+            background: #2d2d3d;
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        /* 代码块 */
+        .ai-code-block {
+            position: relative;
+            margin: 8px 0;
+            background: #1a1a2a;
+            border: 1px solid #444;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .ai-code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 4px 10px;
+            background: #252535;
+            font-size: 11px;
+            color: #888;
+        }
+        .ai-code-apply-btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .ai-code-apply-btn:hover { background: #15803d; }
+        .ai-code-copy-btn {
+            background: #3d3d4d;
+            color: #d4d4d4;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 10px;
+            font-size: 11px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-right: 4px;
+        }
+        .ai-code-copy-btn:hover { background: #4d4d5d; }
+        .ai-code-content {
+            padding: 10px 12px;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            color: #d4d4d4;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        /* 输入区 */
+        #ai-input-area {
+            display: flex;
+            padding: 10px 12px;
+            background: #2d2d3d;
+            border-top: 1px solid #444;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        #ai-input {
+            flex: 1;
+            background: #1e1e2e;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 13px;
+            font-family: inherit;
+            resize: none;
+            min-height: 40px;
+            max-height: 120px;
+            line-height: 1.4;
+        }
+        #ai-input:focus { outline: none; border-color: #2563eb; }
+        #ai-input::placeholder { color: #6b7280; }
+        #ai-send-btn {
+            align-self: flex-end;
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+        }
+        #ai-send-btn:hover { background: #1d4ed8; }
+        #ai-send-btn:disabled { background: #4b5563; cursor: not-allowed; }
+
+        /* 设置对话框 */
+        #ai-settings-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        #ai-settings-overlay.open { display: flex; }
+        #ai-settings-dialog {
+            background: #2d2d3d;
+            border-radius: 12px;
+            padding: 24px;
+            width: 480px;
+            max-height: 80vh;
+            overflow-y: auto;
+            color: #d4d4d4;
+            box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+        }
+        #ai-settings-dialog h3 {
+            margin: 0 0 16px;
+            font-size: 16px;
+            color: #f0f0f0;
+        }
+        .ai-settings-field {
+            margin-bottom: 14px;
+        }
+        .ai-settings-field label {
+            display: block;
+            font-size: 12px;
+            color: #9ca3af;
+            margin-bottom: 4px;
+        }
+        .ai-settings-field input,
+        .ai-settings-field select,
+        .ai-settings-field textarea {
+            width: 100%;
+            background: #1e1e2e;
+            color: #d4d4d4;
+            border: 1px solid #555;
+            border-radius: 6px;
+            padding: 8px 10px;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        .ai-settings-field textarea { min-height: 100px; resize: vertical; }
+        .ai-settings-field input:focus,
+        .ai-settings-field select:focus,
+        .ai-settings-field textarea:focus { outline: none; border-color: #2563eb; }
+        .ai-settings-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 16px;
+        }
+        .ai-settings-actions button {
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+        }
+        .ai-settings-cancel { background: #3d3d4d; color: #d4d4d4; }
+        .ai-settings-cancel:hover { background: #4d4d5d; }
+        .ai-settings-save { background: #2563eb; color: white; }
+        .ai-settings-save:hover { background: #1d4ed8; }
     </style>
 </head>
 <body>
@@ -379,8 +724,17 @@
         </svg>
         模块管理
     </button>
+    <button id="ai-chat-btn" title="AI 助手 (Ctrl+Shift+A)" onclick="toggleAiChat()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 3V3z"/>
+            <line x1="5" y1="5" x2="11" y2="5"/>
+            <line x1="5" y1="8" x2="9" y2="8"/>
+        </svg>
+        AI 助手
+    </button>
 </div>
 
+<div id="main-content">
 <div id="editor-wrapper">
     <div id="blockmirror-editor"></div>
     <div id="resize-handle"></div>
@@ -392,6 +746,69 @@
             <button class="terminal-btn" id="toggle-btn" onclick="toggleTerminal()">隐藏</button>
         </div>
         <div id="xterm-container"></div>
+    </div>
+</div>
+
+<!-- AI 聊天面板 -->
+<div id="ai-chat-panel" class="hidden">
+    <div id="ai-chat-header">
+        <select id="ai-model-select" onchange="onAiModelChange(this.value)">
+            <option value="gpt-5">GPT-5</option>
+            <option value="claude">Claude</option>
+        </select>
+        <div id="ai-conv-dropdown">
+            <button id="ai-conv-btn" onclick="toggleConvList()">New Chat</button>
+            <div id="ai-conv-list"></div>
+        </div>
+        <span id="ai-header-spacer"></span>
+        <button class="ai-header-btn" onclick="aiNewConversation()">+ New</button>
+        <button class="ai-header-btn" onclick="aiClearContext()">Clear</button>
+        <button class="ai-header-btn" onclick="showAiSettings()">Settings</button>
+    </div>
+    <div id="ai-messages"></div>
+    <div id="ai-input-area">
+        <textarea id="ai-input" placeholder="Ask AI to write Python code..." rows="1"
+                  onkeydown="aiInputKeyDown(event)" oninput="aiInputAutoResize(this)"></textarea>
+        <button id="ai-send-btn" onclick="sendAiMessage()">Send</button>
+    </div>
+</div>
+</div>
+
+<!-- AI 设置对话框 -->
+<div id="ai-settings-overlay" onclick="closeAiSettingsOverlay(event)">
+    <div id="ai-settings-dialog">
+        <h3>AI Settings</h3>
+        <div class="ai-settings-field">
+            <label>AuthToken</label>
+            <input type="password" id="ai-set-token" placeholder="msk-...">
+        </div>
+        <div class="ai-settings-field">
+            <label>AIGC-USER</label>
+            <input type="text" id="ai-set-user" placeholder="username">
+        </div>
+        <div class="ai-settings-field">
+            <label>Model</label>
+            <select id="ai-set-model">
+                <option value="gpt-5">GPT-5</option>
+                <option value="claude">Claude</option>
+            </select>
+        </div>
+        <div class="ai-settings-field">
+            <label>Reasoning Effort (GPT-5 only)</label>
+            <select id="ai-set-effort">
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        <div class="ai-settings-field">
+            <label>System Prompt</label>
+            <textarea id="ai-set-prompt"></textarea>
+        </div>
+        <div class="ai-settings-actions">
+            <button class="ai-settings-cancel" onclick="closeAiSettings()">Cancel</button>
+            <button class="ai-settings-save" onclick="saveAiSettings()">Save</button>
+        </div>
     </div>
 </div>
 
@@ -880,10 +1297,12 @@
         var fileName = document.getElementById('file-name');
         var blockfactoryBtn = document.getElementById('blockfactory-btn');
         var moduleManagerBtn = document.getElementById('module-manager-btn');
+        var aiChatBtn = document.getElementById('ai-chat-btn');
         if (fileActions) fileActions.style.display = 'flex';
         if (fileName) fileName.style.display = 'block';
         if (blockfactoryBtn) blockfactoryBtn.style.display = 'flex';
         if (moduleManagerBtn) moduleManagerBtn.style.display = 'flex';
+        if (aiChatBtn) aiChatBtn.style.display = 'flex';
 
         // 监听菜单命令
         window.electronAPI.onMenuCommand(function(command) {
@@ -900,6 +1319,7 @@
                 case 'view:toggleTerminal': toggleTerminal(); break;
                 case 'tools:blockFactory': openBlockFactory(); break;
                 case 'tools:moduleManager': openModuleManager(); break;
+                case 'tools:aiAssistant': toggleAiChat(); break;
             }
         });
 
@@ -913,6 +1333,349 @@
             if (data && data.modules && data.modules.length > 0) {
                 loadCustomModules(data);
             }
+        });
+
+        // 初始化 AI 助手
+        initAiChat();
+    }
+
+    // ══════════════════════════════════════════════════
+    // AI 助手
+    // ══════════════════════════════════════════════════
+
+    var aiState = {
+        currentConversationId: null,
+        conversations: [],
+        isSending: false,
+    };
+
+    function initAiChat() {
+        if (!window.electronAPI || !window.electronAPI.aiGetSettings) return;
+
+        // Load settings and set model selector
+        window.electronAPI.aiGetSettings().then(function(settings) {
+            document.getElementById('ai-model-select').value = settings.model || 'gpt-5';
+        });
+
+        // Load conversations list
+        refreshConversationList();
+    }
+
+    function toggleAiChat() {
+        var panel = document.getElementById('ai-chat-panel');
+        var btn = document.getElementById('ai-chat-btn');
+        var hidden = panel.classList.toggle('hidden');
+        btn.classList.toggle('active', !hidden);
+        syncEditorHeight();
+
+        // Auto-create conversation if none exists
+        if (!hidden && !aiState.currentConversationId) {
+            aiNewConversation();
+        }
+    }
+
+    function onAiModelChange(model) {
+        if (!window.electronAPI) return;
+        window.electronAPI.aiSaveSettings({ model: model });
+    }
+
+    // ── 对话管理 ──
+    function refreshConversationList() {
+        if (!window.electronAPI) return;
+        window.electronAPI.aiGetConversations().then(function(convs) {
+            aiState.conversations = convs || [];
+            renderConvList();
+        });
+    }
+
+    function renderConvList() {
+        var listEl = document.getElementById('ai-conv-list');
+        var btnEl = document.getElementById('ai-conv-btn');
+        listEl.innerHTML = '';
+
+        if (aiState.conversations.length === 0) {
+            listEl.innerHTML = '<div style="padding:12px;color:#6b7280;font-size:12px;">No conversations</div>';
+            btnEl.textContent = 'New Chat';
+            return;
+        }
+
+        // Update button text to current conversation title
+        var current = aiState.conversations.find(function(c) { return c.id === aiState.currentConversationId; });
+        btnEl.textContent = current ? current.title : 'New Chat';
+
+        aiState.conversations.forEach(function(conv) {
+            var item = document.createElement('div');
+            item.className = 'ai-conv-item' + (conv.id === aiState.currentConversationId ? ' active' : '');
+            item.innerHTML =
+                '<span class="ai-conv-item-title">' + escapeHtml(conv.title) + '</span>' +
+                '<button class="ai-conv-item-delete" title="Delete" data-id="' + conv.id + '">x</button>';
+            item.addEventListener('click', function(e) {
+                if (e.target.classList.contains('ai-conv-item-delete')) {
+                    e.stopPropagation();
+                    aiDeleteConversation(e.target.dataset.id);
+                    return;
+                }
+                switchConversation(conv.id);
+                toggleConvList();
+            });
+            listEl.appendChild(item);
+        });
+    }
+
+    function toggleConvList() {
+        document.getElementById('ai-conv-list').classList.toggle('open');
+    }
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        var dropdown = document.getElementById('ai-conv-dropdown');
+        if (dropdown && !dropdown.contains(e.target)) {
+            document.getElementById('ai-conv-list').classList.remove('open');
+        }
+    });
+
+    function aiNewConversation() {
+        if (!window.electronAPI) return;
+        window.electronAPI.aiCreateConversation().then(function(conv) {
+            aiState.currentConversationId = conv.id;
+            document.getElementById('ai-messages').innerHTML = '';
+            refreshConversationList();
+        });
+    }
+
+    function switchConversation(id) {
+        if (!window.electronAPI) return;
+        aiState.currentConversationId = id;
+        window.electronAPI.aiGetConversation(id).then(function(conv) {
+            if (!conv) return;
+            var messagesEl = document.getElementById('ai-messages');
+            messagesEl.innerHTML = '';
+            conv.messages.forEach(function(msg) {
+                appendRenderedMessage(msg.role, msg.content);
+            });
+            scrollMessagesToBottom();
+            refreshConversationList();
+        });
+    }
+
+    function aiDeleteConversation(id) {
+        if (!window.electronAPI) return;
+        window.electronAPI.aiDeleteConversation(id).then(function() {
+            if (aiState.currentConversationId === id) {
+                aiState.currentConversationId = null;
+                document.getElementById('ai-messages').innerHTML = '';
+            }
+            refreshConversationList();
+        });
+    }
+
+    function aiClearContext() {
+        if (!window.electronAPI || !aiState.currentConversationId) return;
+        window.electronAPI.aiClearConversation(aiState.currentConversationId).then(function() {
+            document.getElementById('ai-messages').innerHTML = '';
+        });
+    }
+
+    // ── 消息发送 ──
+    function sendAiMessage() {
+        if (aiState.isSending) return;
+        var inputEl = document.getElementById('ai-input');
+        var text = inputEl.value.trim();
+        if (!text) return;
+
+        if (!window.electronAPI || !window.electronAPI.aiSendMessage) {
+            alert('AI features are only available in Electron.');
+            return;
+        }
+
+        if (!aiState.currentConversationId) {
+            aiNewConversation();
+            // Wait for creation then send
+            setTimeout(function() { sendAiMessage(); }, 200);
+            return;
+        }
+
+        inputEl.value = '';
+        aiInputAutoResize(inputEl);
+        aiState.isSending = true;
+        updateSendButton();
+
+        // Display user message
+        appendRenderedMessage('user', text);
+        scrollMessagesToBottom();
+
+        // Show loading indicator
+        var loadingEl = document.createElement('div');
+        loadingEl.className = 'ai-msg loading';
+        loadingEl.textContent = 'Thinking...';
+        document.getElementById('ai-messages').appendChild(loadingEl);
+        scrollMessagesToBottom();
+
+        window.electronAPI.aiSendMessage(aiState.currentConversationId, text).then(function(result) {
+            // Remove loading indicator
+            if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+
+            if (result.error) {
+                appendRenderedMessage('error', result.error);
+            } else if (result.content) {
+                appendRenderedMessage('assistant', result.content);
+            }
+
+            aiState.isSending = false;
+            updateSendButton();
+            scrollMessagesToBottom();
+            refreshConversationList(); // Title may have been auto-updated
+        }).catch(function(err) {
+            if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl);
+            appendRenderedMessage('error', err.message || String(err));
+            aiState.isSending = false;
+            updateSendButton();
+        });
+    }
+
+    function aiInputKeyDown(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendAiMessage();
+        }
+    }
+
+    function aiInputAutoResize(el) {
+        el.style.height = 'auto';
+        el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    }
+
+    function updateSendButton() {
+        var btn = document.getElementById('ai-send-btn');
+        btn.disabled = aiState.isSending;
+        btn.textContent = aiState.isSending ? '...' : 'Send';
+    }
+
+    function scrollMessagesToBottom() {
+        var el = document.getElementById('ai-messages');
+        el.scrollTop = el.scrollHeight;
+    }
+
+    // ── 消息渲染 ──
+    function appendRenderedMessage(role, content) {
+        var messagesEl = document.getElementById('ai-messages');
+        var msgEl = document.createElement('div');
+        msgEl.className = 'ai-msg ' + role;
+
+        if (role === 'user' || role === 'error') {
+            msgEl.textContent = content;
+        } else {
+            // Assistant: render with code blocks
+            msgEl.innerHTML = renderAssistantContent(content);
+        }
+
+        messagesEl.appendChild(msgEl);
+    }
+
+    function renderAssistantContent(content) {
+        // Split by code blocks: ```language\ncode\n```
+        var codeBlockRegex = /```(\w*)\n([\s\S]*?)```/g;
+        var parts = [];
+        var lastIndex = 0;
+        var match;
+
+        while ((match = codeBlockRegex.exec(content)) !== null) {
+            // Text before code block
+            if (match.index > lastIndex) {
+                parts.push({ type: 'text', content: content.substring(lastIndex, match.index) });
+            }
+            parts.push({ type: 'code', lang: match[1] || '', content: match[2] });
+            lastIndex = match.index + match[0].length;
+        }
+        // Remaining text
+        if (lastIndex < content.length) {
+            parts.push({ type: 'text', content: content.substring(lastIndex) });
+        }
+
+        var html = '';
+        parts.forEach(function(part, idx) {
+            if (part.type === 'text') {
+                html += '<span>' + escapeHtml(part.content) + '</span>';
+            } else {
+                var isPython = part.lang.toLowerCase() === 'python' || part.lang === 'py' || part.lang === '';
+                var codeId = 'ai-code-' + Date.now() + '-' + idx;
+                html += '<div class="ai-code-block">';
+                html += '<div class="ai-code-header">';
+                html += '<span>' + (part.lang || 'code') + '</span>';
+                html += '<span>';
+                html += '<button class="ai-code-copy-btn" onclick="aiCopyCode(\'' + codeId + '\')">Copy</button>';
+                if (isPython) {
+                    html += '<button class="ai-code-apply-btn" onclick="applyCodeToEditor(\'' + codeId + '\')">Apply to Editor</button>';
+                }
+                html += '</span>';
+                html += '</div>';
+                html += '<div class="ai-code-content" id="' + codeId + '">' + escapeHtml(part.content) + '</div>';
+                html += '</div>';
+            }
+        });
+
+        return html || escapeHtml(content);
+    }
+
+    function escapeHtml(s) {
+        var div = document.createElement('div');
+        div.textContent = s;
+        return div.innerHTML;
+    }
+
+    function applyCodeToEditor(codeId) {
+        var codeEl = document.getElementById(codeId);
+        if (!codeEl) return;
+        var code = codeEl.textContent;
+        // Remove trailing whitespace but keep structure
+        code = code.replace(/\s+$/, '');
+        editor.setCode(code);
+    }
+
+    function aiCopyCode(codeId) {
+        var codeEl = document.getElementById(codeId);
+        if (!codeEl) return;
+        var code = codeEl.textContent;
+        if (navigator.clipboard) {
+            navigator.clipboard.writeText(code);
+        }
+    }
+
+    // ── AI 设置 ──
+    function showAiSettings() {
+        if (!window.electronAPI) return;
+        window.electronAPI.aiGetSettings().then(function(settings) {
+            document.getElementById('ai-set-token').value = settings.authToken || '';
+            document.getElementById('ai-set-user').value = settings.aigcUser || '';
+            document.getElementById('ai-set-model').value = settings.model || 'gpt-5';
+            document.getElementById('ai-set-effort').value = settings.effort || 'medium';
+            document.getElementById('ai-set-prompt').value = settings.systemPrompt || '';
+            document.getElementById('ai-settings-overlay').classList.add('open');
+        });
+    }
+
+    function closeAiSettings() {
+        document.getElementById('ai-settings-overlay').classList.remove('open');
+    }
+
+    function closeAiSettingsOverlay(e) {
+        if (e.target === document.getElementById('ai-settings-overlay')) {
+            closeAiSettings();
+        }
+    }
+
+    function saveAiSettings() {
+        if (!window.electronAPI) return;
+        var data = {
+            authToken: document.getElementById('ai-set-token').value,
+            aigcUser: document.getElementById('ai-set-user').value,
+            model: document.getElementById('ai-set-model').value,
+            effort: document.getElementById('ai-set-effort').value,
+            systemPrompt: document.getElementById('ai-set-prompt').value,
+        };
+        window.electronAPI.aiSaveSettings(data).then(function() {
+            document.getElementById('ai-model-select').value = data.model;
+            closeAiSettings();
         });
     }
 </script>
