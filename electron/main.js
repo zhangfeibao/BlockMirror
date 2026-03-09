@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const { CustomModulesStore } = require('./custom-modules-store');
 const { AiClient } = require('./ai-client');
 const { AiSettingsStore } = require('./ai-settings-store');
@@ -33,6 +33,32 @@ function ensureRamgsInPath() {
     if (!found) {
         process.env.PATH = ramgsDir + sep + envPath;
     }
+}
+
+function ensureTestkitInstalled() {
+    const testkitDir = path.join(__dirname, '..', 'testkit');
+    if (!fs.existsSync(path.join(testkitDir, 'setup.py'))) return;
+
+    const check = spawnSync('python', ['-c', 'import ramgs'], {
+        stdio: 'ignore',
+        timeout: 5000,
+    });
+    if (check.status === 0) return; // already installed
+
+    const proc = spawn('pip', ['install', '-e', testkitDir], {
+        env: { ...process.env },
+    });
+    proc.stdout.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
+    proc.stderr.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
+    proc.on('close', (code) => {
+        if (code === 0) {
+            sendToRenderer('terminal:output',
+                '\r\n\x1b[32mramgs package installed successfully.\x1b[0m\r\n');
+        } else {
+            sendToRenderer('terminal:output',
+                '\r\n\x1b[31mFailed to install ramgs package (exit code: ' + code + ').\x1b[0m\r\n');
+        }
+    });
 }
 
 function sendToRenderer(channel, data) {
@@ -547,12 +573,13 @@ function createWindow() {
 
     mainWindow.loadFile(path.join(__dirname, '..', 'test', 'simple_v2.html'));
 
-    // 页面加载完成后推送自定义模块数据
+    // 页面加载完成后推送自定义模块数据 & 安装 testkit
     mainWindow.webContents.on('did-finish-load', () => {
         if (customModulesStore) {
             const modules = customModulesStore.getAll();
             sendToRenderer('custom-modules:reload', modules);
         }
+        ensureTestkitInstalled();
     });
 
     // 开发时可取消注释以打开 DevTools
