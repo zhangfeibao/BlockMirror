@@ -77,6 +77,7 @@ Renderer Process (test/simple_v2.html)
   ├── BlockMirror editor (Blockly + CodeMirror)
   ├── xterm.js terminal panel (resizable, draggable)
   ├── Run/Stop button → editor.getCode() → electronAPI.runPython(filePath)
+  ├── ramgs toolbar (生成/加载/连接) + status bar
   └── window.electronAPI  ← exposed via contextBridge
          ↕ IPC (contextIsolation: true)
 Main Process (electron/main.js)
@@ -86,7 +87,8 @@ Main Process (electron/main.js)
   ├── file:open/save/saveAs/exportPng/confirmSave → dialog + fs
   ├── window:setTitle / window:forceClose → BrowserWindow control
   ├── blockfactory:open → opens blockfactory/ in a new BrowserWindow
-  └── custom-modules:* → Custom modules CRUD + manager window
+  ├── custom-modules:* → Custom modules CRUD + manager window
+  └── ramgs:* → MCU debugging tool (serial connect, symbol management)
 ```
 
 **`electron/main.js`** — Main process. Manages `pythonProcess`, `shellProcess`, `blockFactoryWindow`, `moduleManagerWindow`, and `customModulesStore`. Streams stdout/stderr via `terminal:output` IPC. Menu items send `menu:command` events to the renderer; the renderer's `initMenuCommands()` dispatches them to handler functions.
@@ -121,6 +123,15 @@ Main Process (electron/main.js)
 | renderer → main (invoke) | `custom-modules:export` | Export module(s) to JSON file |
 | renderer → main (invoke) | `custom-modules:import` | Import modules from JSON file |
 | renderer → main (send) | `custom-modules:changed` | Notify main window to reload modules |
+| renderer → main (invoke) | `ramgs:ports` | Enumerate COM ports → `{success, ports[{name, description}]}` |
+| renderer → main (invoke) | `ramgs:status` | Get connection status → `{connected, port, baud, endian, symbols}` |
+| renderer → main (invoke) | `ramgs:create` | Generate symbols from ELF → streams to terminal |
+| renderer → main (invoke) | `ramgs:load` | Load symbols JSON → streams to terminal |
+| renderer → main (invoke) | `ramgs:open` | Connect to device (port/baud/endian validated) → streams to terminal |
+| renderer → main (invoke) | `ramgs:close` | Disconnect device → streams to terminal |
+| renderer → main (invoke) | `ramgs:selectElf` | File dialog for `.elf/.abs/.axf/.out` |
+| renderer → main (invoke) | `ramgs:selectSymbols` | File dialog for `.json` |
+| renderer → main (invoke) | `ramgs:selectOutputDir` | Directory selection dialog |
 | main → renderer | `terminal:output` | Streamed stdout/stderr text |
 | main → renderer | `process:exit` | Process exit with `{exitCode, source}` |
 | main → renderer | `process:start` | Process started with `{source}` |
@@ -209,6 +220,26 @@ The AI system prompt is dynamically composed: base system prompt + optional API 
 | renderer → main (invoke) | `ai:clearConversation` | Clear messages in a conversation |
 | renderer → main (invoke) | `ai:selectApiDoc` | Open file dialog to load API doc |
 | renderer → main (invoke) | `ai:sendMessage` | Send message with context → LLM response |
+
+### RAMViewer (ramgs) Tool Integration
+
+The Electron app integrates `ramgs` — a serial-port-based MCU RAM debugging tool for reading/writing MCU variables in real-time. The tool binary lives at `ramgs/ramgs.exe`; its `elfsymbol/elfsym.exe` sub-tool extracts symbols from ELF firmware files with DWARF debug info.
+
+**Architecture**: `ensureRamgsInPath()` (called at app startup) appends the `ramgs/` directory to `process.env.PATH`. The `spawnRamgs(args, label)` helper in `main.js` spawns `ramgs.exe` with given args, streams stdout/stderr to the terminal via `terminal:output` IPC, and resolves with `{exitCode}`.
+
+**UI components** (in `simple_v2.html`):
+- **Status bar** (`#status-bar`) — fixed at window bottom, shows connection status (dot + text), port, baud rate, and loaded symbols
+- **Toolbar buttons** (`#ramgs-toolbar`) — 生成/加载/连接, displayed in Electron mode
+- **Three modal dialogs** (`.ramgs-overlay`) — Generate Symbols (ELF file + output dir pickers), Load Symbols (JSON file picker), Connect Device (port dropdown + baud + endian selects)
+
+**Key functions in renderer**:
+- `refreshRamgsStatus()` — fetches `ramgs:status` and updates status bar; called at startup and after every action
+- `refreshPorts()` — populates the port `<select>` dropdown via `ramgs:ports`
+- `doCreateSymbols()` / `doLoadSymbols()` / `doConnect()` / `doDisconnect()` — action handlers that show terminal, call IPC, display result
+
+**Validation**: `ramgs:open` in main.js validates port (regex: `COM\d+` or `/dev/...`), baud (numeric), and endian (`'little'`/`'big'` whitelist) before spawning.
+
+**Menu items** (Tools submenu): 生成符号表... / 加载符号表... / 连接设备... / 断开设备 → dispatched via `menu:command` → `ramgs:create` / `ramgs:load` / `ramgs:connect` / `ramgs:disconnect`.
 
 ### BlockMirror Height Sync (`syncEditorHeight`)
 
