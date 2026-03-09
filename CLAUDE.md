@@ -186,6 +186,30 @@ Function: {
 
 Lifecycle: app starts → `CustomModulesStore` loads from disk → `did-finish-load` sends `custom-modules:reload` to renderer → `loadCustomModules()` registers blocks → user edits in manager window → `custom-modules:changed` triggers reload in main window.
 
+### AI Assistant Integration
+
+The Electron app includes a built-in AI chat assistant for Python code generation. It supports two LLM backends (GPT-5 and Claude Sonnet) via an enterprise API gateway (`aimpapi.midea.com`).
+
+**`electron/ai-client.js`** — HTTP client for the LLM API. Sends synchronous (non-streaming) requests. GPT-5 uses OpenAI-compatible format; Claude uses AWS Bedrock-compatible format with extended thinking enabled (8K budget tokens).
+
+**`electron/ai-settings-store.js`** — Persistent settings saved to `app.getPath('userData')/ai-settings.json`. Fields: `authToken`, `aigcUser` (required auth headers), `model` (`'gpt-5'` or `'claude'`), `effort` (GPT-5 reasoning effort: `'low'`/`'medium'`/`'high'`), `systemPrompt`.
+
+**`electron/ai-conversations-store.js`** — Conversation history saved to `app.getPath('userData')/ai-conversations.json`. Supports multiple named conversations with full message history. Auto-titles conversations from the first user message.
+
+The AI system prompt is dynamically composed: base system prompt + optional API doc content (loaded from a local file) + current editor code. This allows the AI to reference hardware API documentation and modify the user's existing code in context.
+
+| Direction | Channel | Purpose |
+|-----------|---------|---------|
+| renderer → main (invoke) | `ai:getSettings` | Get AI settings |
+| renderer → main (invoke) | `ai:saveSettings` | Update AI settings |
+| renderer → main (invoke) | `ai:getConversations` | List all conversations (summaries) |
+| renderer → main (invoke) | `ai:getConversation` | Get full conversation with messages |
+| renderer → main (invoke) | `ai:createConversation` | Create new conversation |
+| renderer → main (invoke) | `ai:deleteConversation` | Delete a conversation |
+| renderer → main (invoke) | `ai:clearConversation` | Clear messages in a conversation |
+| renderer → main (invoke) | `ai:selectApiDoc` | Open file dialog to load API doc |
+| renderer → main (invoke) | `ai:sendMessage` | Send message with context → LLM response |
+
 ### BlockMirror Height Sync (`syncEditorHeight`)
 
 `block_editor.js` and `text_editor.js` both read `editor.configuration.height` (default: 500px) to set fixed pixel heights on their internal containers (`blockContainer`, `blockArea`, `textContainer`). This value is set once at construction and never automatically updated.
