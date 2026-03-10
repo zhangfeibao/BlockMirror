@@ -55,7 +55,7 @@ class AiConversationsStore {
     create(title) {
         const conv = {
             id: this._generateId(),
-            title: title || 'New Conversation',
+            title: title || '新建会话',
             createdAt: Date.now(),
             messages: [],
         };

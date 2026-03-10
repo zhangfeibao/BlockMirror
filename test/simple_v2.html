@@ -1014,24 +1014,24 @@
             <div id="ai-conv-list"></div>
         </div>
         <span id="ai-header-spacer"></span>
-        <button class="ai-header-btn" onclick="aiNewConversation()">+ New</button>
-        <button class="ai-header-btn" onclick="aiClearContext()">Clear</button>
-        <button class="ai-header-btn" onclick="showAiSettings()">Settings</button>
+        <button class="ai-header-btn" onclick="aiNewConversation()">+ 新建</button>
+        <button class="ai-header-btn" onclick="aiClearContext()">清除</button>
+        <button class="ai-header-btn" onclick="showAiSettings()">设置</button>
     </div>
     <div id="ai-messages"></div>
     <div id="ai-input-area">
         <textarea id="ai-input" placeholder="让AI帮你编写控制算法，协助完成性能调试..." rows="4"></textarea>
         <div id="ai-input-actions">
-            <button id="ai-api-doc-btn" onclick="selectApiDoc()" title="Load API documentation for hardware interfaces">
+            <button id="ai-api-doc-btn" onclick="selectApiDoc()" title="加载硬件设备访问API参考文档">
                 <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M4 1h5.5L13 4.5V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z"/>
                     <polyline points="9,1 9,5 13,5"/>
                 </svg>
-                API Doc
+                API参考
             </button>
             <span id="ai-api-doc-name"></span>
-            <button id="ai-api-doc-clear" onclick="clearApiDoc()" style="display:none;" title="Remove API doc">x</button>
-            <button id="ai-send-btn" onclick="sendAiMessage()">Send</button>
+            <button id="ai-api-doc-clear" onclick="clearApiDoc()" style="display:none;" title="移除API参考文档">x</button>
+            <button id="ai-send-btn" onclick="sendAiMessage()">发送</button>
         </div>
     </div>
 </div>
@@ -1052,14 +1052,14 @@
 <!-- AI: New Conversation Dialog -->
 <div class="ramgs-overlay" id="ai-newconv-overlay" onclick="closeRamgsOverlay(event, 'ai-newconv-overlay')">
     <div class="ramgs-dialog" style="width:360px;" onclick="event.stopPropagation()">
-        <h3>New Conversation</h3>
+        <h3>新建会话</h3>
         <div class="ramgs-field">
             <label>Title</label>
-            <input type="text" id="ai-newconv-title" placeholder="Enter conversation title..." maxlength="100">
+            <input type="text" id="ai-newconv-title" placeholder="输入会话标题..." maxlength="100">
         </div>
         <div class="ramgs-actions">
-            <button onclick="document.getElementById('ai-newconv-overlay').classList.remove('open')">Cancel</button>
-            <button class="ramgs-btn-primary" onclick="doCreateConversation()">OK</button>
+            <button onclick="document.getElementById('ai-newconv-overlay').classList.remove('open')">取消</button>
+            <button class="ramgs-btn-primary" onclick="doCreateConversation()">确认</button>
         </div>
     </div>
 </div>
@@ -1857,7 +1857,7 @@
     function doCreateConversation() {
         if (!window.electronAPI) return;
         var input = document.getElementById('ai-newconv-title');
-        var title = input.value.trim() || 'New Conversation';
+        var title = input.value.trim() || '新建会话';
         document.getElementById('ai-newconv-overlay').classList.remove('open');
         window.electronAPI.aiCreateConversation(title).then(function(conv) {
             aiState.currentConversationId = conv.id;
