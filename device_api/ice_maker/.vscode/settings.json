@@ -1,0 +1,6 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "midea-python-envs.defaultEnvManager": "midea.vscode-python-envs:system",
+    "midea-python-envs.defaultPackageManager": "ms-python.python:pip",
+    "midea-python-envs.pythonProjects": []
+}
