@@ -1768,9 +1768,13 @@
         btn.classList.toggle('active', !hidden);
         syncEditorHeight();
 
-        // Auto-create conversation if none exists
+        // Auto-load most recent conversation when panel opens
         if (!hidden && !aiState.currentConversationId) {
-            aiNewConversation();
+            refreshConversationList(function() {
+                if (!aiState.currentConversationId && aiState.conversations.length > 0) {
+                    switchConversation(aiState.conversations[0].id);
+                }
+            });
         }
     }
 
@@ -1780,11 +1784,12 @@
     }
 
     // ── 对话管理 ──
-    function refreshConversationList() {
+    function refreshConversationList(callback) {
         if (!window.electronAPI) return;
         window.electronAPI.aiGetConversations().then(function(convs) {
             aiState.conversations = convs || [];
             renderConvList();
+            if (callback) callback();
         });
     }
 
@@ -1915,9 +1920,12 @@
         }
 
         if (!aiState.currentConversationId) {
-            aiNewConversation();
-            // Wait for creation then send
-            setTimeout(function() { sendAiMessage(); }, 200);
+            // Silently create a conversation, then retry send
+            window.electronAPI.aiCreateConversation().then(function(conv) {
+                aiState.currentConversationId = conv.id;
+                refreshConversationList();
+                sendAiMessage();
+            });
             return;
         }
 
