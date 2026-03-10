@@ -220,7 +220,9 @@ BlockMirrorTextToBlocks.prototype.METHOD_SIGNATURES = {
 
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS = {
     "plt": "import matplotlib.pyplot as plt",
-    "turtle": "import turtle"
+    "turtle": "import turtle",
+    "math": "import math",
+    "random": "import random"
 };
 
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
@@ -377,6 +379,44 @@ makeTurtleBlock("bye", false, [], "say goodbye to turtles ", []);
 
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['matplotlib.pyplot'] =
     BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['plt'];
+
+// math module
+BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['math'] = {
+    'sqrt': {returns: true, simple: ['x'], message: 'square root', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'floor': {returns: true, simple: ['x'], message: 'floor', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'ceil': {returns: true, simple: ['x'], message: 'ceiling', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'log': {returns: true, simple: ['x'], message: 'logarithm', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'log10': {returns: true, simple: ['x'], message: 'log base 10', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'log2': {returns: true, simple: ['x'], message: 'log base 2', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'sin': {returns: true, simple: ['x'], message: 'sine', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'cos': {returns: true, simple: ['x'], message: 'cosine', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'tan': {returns: true, simple: ['x'], message: 'tangent', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'asin': {returns: true, simple: ['x'], message: 'arc sine', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'acos': {returns: true, simple: ['x'], message: 'arc cosine', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'atan': {returns: true, simple: ['x'], message: 'arc tangent', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'atan2': {returns: true, simple: ['y', 'x'], message: 'arc tangent 2', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'pow': {returns: true, simple: ['x', 'y'], message: 'power', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'exp': {returns: true, simple: ['x'], message: 'exponential', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'fabs': {returns: true, simple: ['x'], message: 'absolute value', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'factorial': {returns: true, simple: ['x'], message: 'factorial', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'gcd': {returns: true, simple: ['a', 'b'], message: 'gcd', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'isnan': {returns: true, simple: ['x'], message: 'is NaN', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'isinf': {returns: true, simple: ['x'], message: 'is infinite', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'radians': {returns: true, simple: ['x'], message: 'to radians', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'degrees': {returns: true, simple: ['x'], message: 'to degrees', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+};
+
+// random module
+BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['random'] = {
+    'randint': {returns: true, simple: ['a', 'b'], message: 'random integer', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'random': {returns: true, simple: [], message: 'random float', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'choice': {returns: true, simple: ['seq'], message: 'random choice', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'shuffle': {returns: false, simple: ['x'], message: 'shuffle', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'sample': {returns: true, simple: ['population', 'k'], message: 'random sample', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'uniform': {returns: true, simple: ['a', 'b'], message: 'random uniform', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'randrange': {returns: true, simple: ['stop'], full: ['start', 'stop', 'step'], message: 'random range', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+    'seed': {returns: false, simple: ['a'], message: 'set random seed', colour: BlockMirrorTextToBlocks.COLOR.MATH},
+};
 
 BlockMirrorTextToBlocks.getFunctionBlock = function(name, values, module) {
     if (values === undefined) {

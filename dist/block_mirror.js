@@ -2340,7 +2340,9 @@ BlockMirrorTextToBlocks.prototype.METHOD_SIGNATURES = {
 };
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS = {
   "plt": "import matplotlib.pyplot as plt",
-  "turtle": "import turtle"
+  "turtle": "import turtle",
+  "math": "import math",
+  "random": "import random"
 };
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES = {
   "cisc108": {
@@ -2488,6 +2490,195 @@ makeTurtleBlock("setup", false, ["width", "height"], "set drawing area size ", [
 makeTurtleBlock("title", false, ["message"], "set title of drawing area ", []);
 makeTurtleBlock("bye", false, [], "say goodbye to turtles ", []);
 BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['matplotlib.pyplot'] = BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['plt'];
+
+// math module
+BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['math'] = {
+  'sqrt': {
+    returns: true,
+    simple: ['x'],
+    message: 'square root',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'floor': {
+    returns: true,
+    simple: ['x'],
+    message: 'floor',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'ceil': {
+    returns: true,
+    simple: ['x'],
+    message: 'ceiling',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'log': {
+    returns: true,
+    simple: ['x'],
+    message: 'logarithm',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'log10': {
+    returns: true,
+    simple: ['x'],
+    message: 'log base 10',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'log2': {
+    returns: true,
+    simple: ['x'],
+    message: 'log base 2',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'sin': {
+    returns: true,
+    simple: ['x'],
+    message: 'sine',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'cos': {
+    returns: true,
+    simple: ['x'],
+    message: 'cosine',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'tan': {
+    returns: true,
+    simple: ['x'],
+    message: 'tangent',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'asin': {
+    returns: true,
+    simple: ['x'],
+    message: 'arc sine',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'acos': {
+    returns: true,
+    simple: ['x'],
+    message: 'arc cosine',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'atan': {
+    returns: true,
+    simple: ['x'],
+    message: 'arc tangent',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'atan2': {
+    returns: true,
+    simple: ['y', 'x'],
+    message: 'arc tangent 2',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'pow': {
+    returns: true,
+    simple: ['x', 'y'],
+    message: 'power',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'exp': {
+    returns: true,
+    simple: ['x'],
+    message: 'exponential',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'fabs': {
+    returns: true,
+    simple: ['x'],
+    message: 'absolute value',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'factorial': {
+    returns: true,
+    simple: ['x'],
+    message: 'factorial',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'gcd': {
+    returns: true,
+    simple: ['a', 'b'],
+    message: 'gcd',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'isnan': {
+    returns: true,
+    simple: ['x'],
+    message: 'is NaN',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'isinf': {
+    returns: true,
+    simple: ['x'],
+    message: 'is infinite',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'radians': {
+    returns: true,
+    simple: ['x'],
+    message: 'to radians',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'degrees': {
+    returns: true,
+    simple: ['x'],
+    message: 'to degrees',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  }
+};
+
+// random module
+BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_SIGNATURES['random'] = {
+  'randint': {
+    returns: true,
+    simple: ['a', 'b'],
+    message: 'random integer',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'random': {
+    returns: true,
+    simple: [],
+    message: 'random float',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'choice': {
+    returns: true,
+    simple: ['seq'],
+    message: 'random choice',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'shuffle': {
+    returns: false,
+    simple: ['x'],
+    message: 'shuffle',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'sample': {
+    returns: true,
+    simple: ['population', 'k'],
+    message: 'random sample',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'uniform': {
+    returns: true,
+    simple: ['a', 'b'],
+    message: 'random uniform',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'randrange': {
+    returns: true,
+    simple: ['stop'],
+    full: ['start', 'stop', 'step'],
+    message: 'random range',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  },
+  'seed': {
+    returns: false,
+    simple: ['a'],
+    message: 'set random seed',
+    colour: BlockMirrorTextToBlocks.COLOR.MATH
+  }
+};
 BlockMirrorTextToBlocks.getFunctionBlock = function (name, values, module) {
   if (values === undefined) {
     values = {};
@@ -2575,6 +2766,41 @@ TOOLBOX_CATEGORY.DICTIONARIES = {
   colour: "DICTIONARY",
   blocks: ["{'1st key': ___, '2nd key': ___, '3rd key': ___}", "{}", "___['key']"]
 };
+TOOLBOX_CATEGORY.AUGMENTED_ASSIGN = {
+  name: "Augmented Assignment",
+  colour: "VARIABLES",
+  blocks: ["___ += 1", "___ -= 1", "___ *= ___"]
+};
+TOOLBOX_CATEGORY.MATH_MODULE = {
+  name: "Math Module",
+  colour: "MATH",
+  blocks: ["import math", "math.sqrt(___)", "math.floor(___)", "math.ceil(___)", "math.log(___)", "math.sin(___)", "math.cos(___)", "math.pi"]
+};
+TOOLBOX_CATEGORY.RANDOM_MODULE = {
+  name: "Random Module",
+  colour: "MATH",
+  blocks: ["import random", "random.randint(0, 10)", "random.random()", "random.choice(___)"]
+};
+TOOLBOX_CATEGORY.LIST_METHODS = {
+  name: "List Methods",
+  colour: "LIST",
+  blocks: ["___.append(___)", "___.insert(___, ___)", "___.remove(___)", "___.pop()", "___.index(___)", "___.count(___)", "___.sort()", "___.reverse()", "___.copy()", "___.extend(___)"]
+};
+TOOLBOX_CATEGORY.DICT_METHODS = {
+  name: "Dict Methods",
+  colour: "DICTIONARY",
+  blocks: ["___.keys()", "___.values()", "___.items()", "___.get(___)", "___.update(___)", "___.pop(___)"]
+};
+TOOLBOX_CATEGORY.SETS = {
+  name: "Sets",
+  colour: "SET",
+  blocks: ["{___, ___, ___}", "set(___)", "___.add(___)", "___.remove(___)", "___.discard(___)"]
+};
+TOOLBOX_CATEGORY.STRING_METHODS = {
+  name: "String Methods",
+  colour: "TEXT",
+  blocks: ["len(___)", "___.find(___)", "___.upper()", "___.lower()", "___.strip()", "___.split()", "''.join(___)", "___.replace('', '')", "___.startswith('')", "___.endswith('')", "___.isdigit()", "___.isalpha()"]
+};
 BlockMirrorBlockEditor.prototype.TOOLBOXES = {
   //******************************************************
   'empty': [{
@@ -2587,19 +2813,23 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
   // TODO: What should live in here?
   TOOLBOX_CATEGORY.VARIABLES],
   //******************************************************
-  'normal': [TOOLBOX_CATEGORY.VARIABLES, TOOLBOX_CATEGORY.DECISIONS, {
+  'normal': [TOOLBOX_CATEGORY.VARIABLES, TOOLBOX_CATEGORY.AUGMENTED_ASSIGN, TOOLBOX_CATEGORY.DECISIONS, {
     name: "Iteration",
     colour: "CONTROL",
-    blocks: ['for ___ in ___: pass', 'while ___: pass', 'break']
+    blocks: ['for ___ in ___: pass', 'for ___ in range(0, 10): pass', 'while ___: pass', 'break', 'continue']
   }, {
     name: "Functions",
     colour: "FUNCTIONS",
     blocks: ["def ___(___): pass", "def ___(___: int)->str: pass", "return ___"]
-  }, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.CALCULATIONS, TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING, TOOLBOX_CATEGORY.INPUT, TOOLBOX_CATEGORY.TURTLES, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.VALUES, TOOLBOX_CATEGORY.CONVERSIONS, {
+  }, TOOLBOX_CATEGORY.SEP, {
+    name: "Calculation",
+    colour: "MATH",
+    blocks: ["___ + ___", "___ - ___", "___ * ___", "___ / ___", "___ // ___", "___ % ___", "___ ** ___", "-___", "round(___)", "abs(___)", "min(___, ___)", "max(___, ___)", "sum(___)"]
+  }, TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING, TOOLBOX_CATEGORY.INPUT, TOOLBOX_CATEGORY.TURTLES, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.VALUES, TOOLBOX_CATEGORY.CONVERSIONS, {
     name: "Lists",
     colour: "LIST",
-    blocks: ["[0, 0, 0]", "[___, ___, ___]", "[]", "___.append(___)", "range(0, 10)"]
-  }, TOOLBOX_CATEGORY.DICTIONARIES],
+    blocks: ["[0, 0, 0]", "[___, ___, ___]", "[]", "range(0, 10)", "len(___)", "___ in ___", "sorted(___)"]
+  }, TOOLBOX_CATEGORY.LIST_METHODS, TOOLBOX_CATEGORY.DICTIONARIES, TOOLBOX_CATEGORY.DICT_METHODS, TOOLBOX_CATEGORY.STRING_METHODS, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.MATH_MODULE, TOOLBOX_CATEGORY.RANDOM_MODULE, TOOLBOX_CATEGORY.SETS],
   //******************************************************
   'ct': [TOOLBOX_CATEGORY.VARIABLES, TOOLBOX_CATEGORY.DECISIONS, {
     name: "Iteration",
@@ -2611,14 +2841,14 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     blocks: ["[0, 0, 0]", "[___, ___, ___]", "[]", "___.append(___)"]
   }],
   //******************************************************
-  'full': [TOOLBOX_CATEGORY.VARIABLES, {
+  'full': [TOOLBOX_CATEGORY.VARIABLES, TOOLBOX_CATEGORY.AUGMENTED_ASSIGN, {
     name: "Literal Values",
     colour: "LIST",
     blocks: ["0", "''", "True", "None", "[___, ___, ___]", "(___, ___, ___)", "{___, ___, ___}", "{___: ___, ___: ___, ___: ___}"]
   }, {
     name: "Calculations",
     colour: "MATH",
-    blocks: ["-___", "___ + ___", "___ >> ___", "abs(___)", "round(___)"]
+    blocks: ["-___", "___ + ___", "___ - ___", "___ * ___", "___ / ___", "___ // ___", "___ % ___", "___ ** ___", "___ >> ___", "abs(___)", "round(___)"]
   }, {
     name: "Logic",
     colour: "LOGIC",
@@ -2651,15 +2881,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     name: "Builtin Functions",
     colour: "SEQUENCES",
     blocks: ["len(___)", "sorted(___)", "enumerate(___)", "reversed(___)", "range(0, 10)", "min(___, ___)", "max(___, ___)", "sum(___)", "all(___)", "any(___)", "zip(___, ___)", "map(___, ___)", "filter(___, ___)"]
-  }, {
-    name: "List Methods",
-    colour: "LIST",
-    blocks: ["___.append(___)", "___.pop()", "___.clear()"]
-  }, {
-    name: "String Methods",
-    colour: "TEXT",
-    blocks: ["___.startswith('')", "___.endswith('')", "___.replace('', '')", "___.lower('')", "___.upper('')", "___.title('')", "___.strip('')", "___.split('')", "''.join(___)", "___.format('')", "___.strip('')"]
-  }, {
+  }, TOOLBOX_CATEGORY.LIST_METHODS, TOOLBOX_CATEGORY.STRING_METHODS, TOOLBOX_CATEGORY.DICT_METHODS, TOOLBOX_CATEGORY.SETS, {
     name: "Subscripting",
     colour: "SEQUENCES",
     blocks: ["___[___]", "___[___:___]", "___[___:___:___]"]
@@ -2667,7 +2889,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     name: "Generators",
     colour: "SEQUENCES",
     blocks: ["[___ for ___ in ___]", "(___ for ___ in ___)", "{___ for ___ in ___}", "{___: ___ for ___ in ___ if ___}", "[___ for ___ in ___ if ___]", "(___ for ___ in ___ if ___)", "{___ for ___ in ___ if ___}", "{___: ___ for ___ in ___ if ___}"]
-  }, {
+  }, TOOLBOX_CATEGORY.SEP, TOOLBOX_CATEGORY.MATH_MODULE, TOOLBOX_CATEGORY.RANDOM_MODULE, {
     name: "Comments",
     colour: "PYTHON",
     blocks: ["# ", '"""\n"""']
