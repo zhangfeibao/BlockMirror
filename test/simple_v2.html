@@ -450,6 +450,12 @@
             line-height: 1;
         }
         .ai-conv-item-delete:hover { color: #ef4444; }
+        .ai-conv-item-time {
+            font-size: 10px;
+            color: #6b7280;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
 
         /* 消息区 */
         #ai-messages {
@@ -1041,6 +1047,21 @@
     <span class="status-info" id="status-baud"></span>
     <span class="status-sep" id="status-sep3" style="display:none;">|</span>
     <span class="status-info" id="status-symbols"></span>
+</div>
+
+<!-- AI: New Conversation Dialog -->
+<div class="ramgs-overlay" id="ai-newconv-overlay" onclick="closeRamgsOverlay(event, 'ai-newconv-overlay')">
+    <div class="ramgs-dialog" style="width:360px;" onclick="event.stopPropagation()">
+        <h3>New Conversation</h3>
+        <div class="ramgs-field">
+            <label>Title</label>
+            <input type="text" id="ai-newconv-title" placeholder="Enter conversation title..." maxlength="100">
+        </div>
+        <div class="ramgs-actions">
+            <button onclick="document.getElementById('ai-newconv-overlay').classList.remove('open')">Cancel</button>
+            <button class="ramgs-btn-primary" onclick="doCreateConversation()">OK</button>
+        </div>
+    </div>
 </div>
 
 <!-- ramgs: Generate Symbols Dialog -->
@@ -1785,8 +1806,15 @@
         aiState.conversations.forEach(function(conv) {
             var item = document.createElement('div');
             item.className = 'ai-conv-item' + (conv.id === aiState.currentConversationId ? ' active' : '');
+            var timeStr = '';
+            if (conv.createdAt) {
+                var d = new Date(conv.createdAt);
+                timeStr = (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+                    String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+            }
             item.innerHTML =
                 '<span class="ai-conv-item-title">' + escapeHtml(conv.title) + '</span>' +
+                '<span class="ai-conv-item-time">' + timeStr + '</span>' +
                 '<button class="ai-conv-item-delete" title="Delete" data-id="' + conv.id + '">x</button>';
             item.addEventListener('click', function(e) {
                 if (e.target.classList.contains('ai-conv-item-delete')) {
@@ -1814,13 +1842,32 @@
     });
 
     function aiNewConversation() {
+        var overlay = document.getElementById('ai-newconv-overlay');
+        var input = document.getElementById('ai-newconv-title');
+        input.value = '';
+        overlay.classList.add('open');
+        setTimeout(function() { input.focus(); }, 100);
+    }
+
+    function doCreateConversation() {
         if (!window.electronAPI) return;
-        window.electronAPI.aiCreateConversation().then(function(conv) {
+        var input = document.getElementById('ai-newconv-title');
+        var title = input.value.trim() || 'New Conversation';
+        document.getElementById('ai-newconv-overlay').classList.remove('open');
+        window.electronAPI.aiCreateConversation(title).then(function(conv) {
             aiState.currentConversationId = conv.id;
             document.getElementById('ai-messages').innerHTML = '';
             refreshConversationList();
         });
     }
+
+    // Allow Enter key to confirm in new conversation dialog
+    document.getElementById('ai-newconv-title').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            doCreateConversation();
+        }
+    });
 
     function switchConversation(id) {
         if (!window.electronAPI) return;
