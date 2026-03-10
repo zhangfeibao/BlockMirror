@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, nativeTheme } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -8,6 +8,7 @@ const { AiSettingsStore } = require('./ai-settings-store');
 const { AiConversationsStore } = require('./ai-conversations-store');
 
 let mainWindow = null;
+nativeTheme.themeSource = 'dark';
 let pythonProcess = null;
 let shellProcess = null;
 let blockFactoryWindow = null;
@@ -208,6 +209,7 @@ ipcMain.on('blockfactory:open', () => {
         width: 1200,
         height: 800,
         title: '自定义积木块 - BlockMirror',
+        backgroundColor: '#0d1117',
         autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
@@ -235,6 +237,7 @@ ipcMain.on('custom-modules:openManager', () => {
         width: 960,
         height: 640,
         title: '自定义模块管理 - BlockMirror',
+        backgroundColor: '#0d1117',
         autoHideMenuBar: true,
         webPreferences: {
             nodeIntegration: false,
@@ -610,6 +613,7 @@ function createWindow() {
         width: 1280,
         height: 800,
         title: 'BlockMirror',
+        backgroundColor: '#0d1117',
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
