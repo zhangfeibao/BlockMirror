@@ -191,3 +191,77 @@ Blockly.Variables.nameUsedWithAnyType = function(name, workspace) {
   }
   return null;
 };
+
+// Custom dialog implementations for Electron (window.prompt/confirm/alert are not supported)
+if (Blockly.dialog && Blockly.dialog.setPrompt) {
+    Blockly.dialog.setPrompt(function(message, defaultValue, callback) {
+        // Create a modal overlay
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center;';
+
+        var dialog = document.createElement('div');
+        dialog.style.cssText = 'background:#2d2d2d;color:#eee;border-radius:8px;padding:20px;min-width:300px;max-width:450px;box-shadow:0 4px 20px rgba(0,0,0,0.5);font-family:sans-serif;';
+
+        var msgEl = document.createElement('div');
+        msgEl.style.cssText = 'margin-bottom:12px;font-size:14px;';
+        msgEl.textContent = message;
+
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = defaultValue || '';
+        input.style.cssText = 'width:100%;box-sizing:border-box;padding:8px;border:1px solid #555;border-radius:4px;background:#1e1e1e;color:#eee;font-size:14px;margin-bottom:16px;outline:none;';
+
+        var btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;justify-content:flex-end;gap:8px;';
+
+        var btnCancel = document.createElement('button');
+        btnCancel.textContent = 'Cancel';
+        btnCancel.style.cssText = 'padding:6px 16px;border:1px solid #555;border-radius:4px;background:#3c3c3c;color:#eee;cursor:pointer;font-size:13px;';
+
+        var btnOk = document.createElement('button');
+        btnOk.textContent = 'OK';
+        btnOk.style.cssText = 'padding:6px 16px;border:none;border-radius:4px;background:#0078d4;color:#fff;cursor:pointer;font-size:13px;';
+
+        btnRow.appendChild(btnCancel);
+        btnRow.appendChild(btnOk);
+        dialog.appendChild(msgEl);
+        dialog.appendChild(input);
+        dialog.appendChild(btnRow);
+        overlay.appendChild(dialog);
+        document.body.appendChild(overlay);
+
+        input.focus();
+        input.select();
+
+        function cleanup() {
+            if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        }
+
+        btnOk.addEventListener('click', function() {
+            cleanup();
+            callback(input.value);
+        });
+
+        btnCancel.addEventListener('click', function() {
+            cleanup();
+            callback(null);
+        });
+
+        input.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                cleanup();
+                callback(input.value);
+            } else if (e.key === 'Escape') {
+                cleanup();
+                callback(null);
+            }
+        });
+
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
+                cleanup();
+                callback(null);
+            }
+        });
+    });
+}
