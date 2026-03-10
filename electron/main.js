@@ -709,13 +709,13 @@ function buildAppMenu() {
             label: '帮助(&H)',
             submenu: [
                 {
-                    label: '关于 BlockMirror',
+                    label: '关于性能调试器',
                     click: () => {
                         dialog.showMessageBox(mainWindow, {
                             type: 'info',
-                            title: '关于 BlockMirror',
-                            message: 'BlockMirror',
-                            detail: '双模式 Python 编辑器\n基于 Blockly + CodeMirror',
+                            title: '关于性能调试器',
+                            message: '性能调试器',
+                            detail: 'AI集成的双模式控制算法编辑器\nMidea 智能电控',
                         });
                     },
                 },
