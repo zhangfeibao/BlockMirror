@@ -1,20 +1,19 @@
 .CodeMirror-gutters {
-    background-color: #ddd;
-    /*border-left: 1px solid #bbb;*/
+    background-color: #161b22;
+    border-right: 1px solid #30363d;
 }
 
 .CodeMirror-code div pre {
-    border-bottom: 1px dashed rgba(1,1,1,.1);
+    border-bottom: 1px dashed rgba(255,255,255,.06);
 }
 
 .block-mirror-read-only .CodeMirror-scroll {
-    background-color: #E5E5E5;
+    background-color: #0d1117;
 }
 
-
 .blockly-readonly-layer {
-    color: white;
-    background-color: white;
+    color: #0d1117;
+    background-color: #0d1117;
     opacity: .25;
     position: absolute;
     z-index: 100;
@@ -22,13 +21,68 @@
 
 .blockmirror-toolbox-variable>.blocklyFlyoutLabelText {
     font-style: normal;
-    fill: black;
+    fill: #e6edf3;
 }
 
 .blockmirror-toolbox-variable>.blocklyFlyoutLabelBackground {
     font-style: normal;
-    fill: white;
+    fill: #1c2128;
     opacity: 1;
-    stroke: darkgray;
+    stroke: #30363d;
     transform: translate(-1px, -5px) scale(1.1,1.5);
+}
+
+/* ── CodeMirror Dark Theme Override ── */
+.CodeMirror {
+    background: #0d1117;
+    color: #e6edf3;
+}
+
+.CodeMirror-linenumber {
+    color: #6e7681;
+}
+
+.CodeMirror-cursor {
+    border-left: 1px solid #e6edf3;
+}
+
+.CodeMirror-selected { background: rgba(31,111,235,0.3); }
+.CodeMirror-focused .CodeMirror-selected { background: rgba(31,111,235,0.4); }
+.CodeMirror-activeline-background { background: rgba(110,118,129,0.1); }
+.CodeMirror-matchingbracket { color: #e6edf3 !important; background: rgba(88,166,255,0.25); }
+
+/* Python syntax highlighting - GitHub Dark style */
+.cm-s-default .cm-keyword { color: #ff7b72; }
+.cm-s-default .cm-atom { color: #79c0ff; }
+.cm-s-default .cm-number { color: #79c0ff; }
+.cm-s-default .cm-def { color: #d2a8ff; }
+.cm-s-default .cm-variable { color: #e6edf3; }
+.cm-s-default .cm-variable-2 { color: #ffa657; }
+.cm-s-default .cm-variable-3 { color: #79c0ff; }
+.cm-s-default .cm-property { color: #79c0ff; }
+.cm-s-default .cm-operator { color: #ff7b72; }
+.cm-s-default .cm-comment { color: #8b949e; font-style: italic; }
+.cm-s-default .cm-string { color: #a5d6ff; }
+.cm-s-default .cm-string-2 { color: #a5d6ff; }
+.cm-s-default .cm-meta { color: #ffa657; }
+.cm-s-default .cm-builtin { color: #ffa657; }
+.cm-s-default .cm-tag { color: #7ee787; }
+.cm-s-default .cm-attribute { color: #79c0ff; }
+.cm-s-default .cm-header { color: #d2a8ff; }
+.cm-s-default .cm-hr { color: #30363d; }
+.cm-s-default .cm-link { color: #58a6ff; }
+.cm-s-default .cm-error { color: #f85149; }
+
+/* ── CodeMirror show-hint dark ── */
+.CodeMirror-hints {
+    background: #1c2128;
+    border: 1px solid #30363d;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.CodeMirror-hint {
+    color: #e6edf3;
+}
+li.CodeMirror-hint-active {
+    background: #1f6feb;
+    color: #ffffff;
 }

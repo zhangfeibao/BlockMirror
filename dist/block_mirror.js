@@ -439,14 +439,14 @@ function BlockMirrorTextEditor(blockMirror) {
   this.codeMirror.on('change', this.changed.bind(this));
   this.codeMirror.setSize(null, '100%');
   this.imageMarkers = [];
-  this.textContainer.style.border = '1px solid lightgray';
+  this.textContainer.style.border = '1px solid #30363d';
   this.textContainer.style["float"] = 'left';
   this.updateWidth();
   this.textContainer.style.height = blockMirror.configuration.height;
   // Style sidebar
   this.textSidebar.style.height = '100%';
   this.textSidebar.style["float"] = 'left';
-  this.textSidebar.style.backgroundColor = '#ddd';
+  this.textSidebar.style.backgroundColor = '#161b22';
   window.addEventListener('resize', this.resizeResponsively.bind(this), false);
 
   // TODO: Finish implementing code completion
@@ -762,6 +762,22 @@ function BlockMirrorBlockEditor(blockMirror) {
   // this.loadBlocklyCSS();
 
   // Inject Blockly
+  var darkTheme = Blockly.Theme.defineTheme('dark', {
+    base: Blockly.Themes.Classic,
+    componentStyles: {
+      workspaceBackgroundColour: '#0d1117',
+      toolboxBackgroundColour: '#161b22',
+      toolboxForegroundColour: '#e6edf3',
+      flyoutBackgroundColour: '#1c2128',
+      flyoutForegroundColour: '#e6edf3',
+      flyoutOpacity: 0.95,
+      scrollbarColour: '#30363d',
+      scrollbarOpacity: 0.6,
+      insertionMarkerColour: '#58a6ff',
+      insertionMarkerOpacity: 0.5,
+      cursorColour: '#58a6ff'
+    }
+  });
   var blocklyOptions = {
     media: blockMirror.configuration.blocklyMediaPath,
     // We use special comment blocks
@@ -774,7 +790,8 @@ function BlockMirrorBlockEditor(blockMirror) {
     readOnly: blockMirror.configuration.readOnly,
     scrollbars: true,
     toolbox: this.makeToolbox(),
-    renderer: blockMirror.configuration.renderer
+    renderer: blockMirror.configuration.renderer,
+    theme: darkTheme
   };
   this.workspace = Blockly.inject(blockMirror.tags.blockEditor, blocklyOptions);
   // Configure Blockly
@@ -1067,7 +1084,7 @@ BlockMirrorBlockEditor.prototype.getPngFromBlocks = function (callback) {
       // Create the XML representation of the SVG
       var xml = new XMLSerializer().serializeToString(blocks);
       var classes = 'class="Thrasos-renderer classic-theme" ';
-      xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' + classes + ' width="' + bbox.width + '" height="' + bbox.height + '" viewBox="0 0 ' + bbox.width + " " + bbox.height + '"><rect width="100%" height="100%" fill="white"></rect>' + xml + "</svg>";
+      xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' + classes + ' width="' + bbox.width + '" height="' + bbox.height + '" viewBox="0 0 ' + bbox.width + " " + bbox.height + '"><rect width="100%" height="100%" fill="#0d1117"></rect>' + xml + "</svg>";
       console.log(xml);
       // create a file blob of our SVG.
       // Unfortunately, this crashes modern chrome for unknown reasons.

@@ -52,14 +52,14 @@ function BlockMirrorTextEditor(blockMirror) {
     this.codeMirror.on('change', this.changed.bind(this));
     this.codeMirror.setSize(null, '100%');
     this.imageMarkers = [];
-    this.textContainer.style.border = '1px solid lightgray';
+    this.textContainer.style.border = '1px solid #30363d';
     this.textContainer.style.float = 'left';
     this.updateWidth();
     this.textContainer.style.height = blockMirror.configuration.height;
     // Style sidebar
     this.textSidebar.style.height = '100%';
     this.textSidebar.style.float = 'left';
-    this.textSidebar.style.backgroundColor = '#ddd';
+    this.textSidebar.style.backgroundColor = '#161b22';
 
     window.addEventListener('resize', this.resizeResponsively.bind(this), false);
 
