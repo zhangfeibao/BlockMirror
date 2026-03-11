@@ -626,31 +626,71 @@ ipcMain.handle('vscode:open', async () => {
             return { success: false, error: 'VSCode/Code.exe not found' };
         }
 
-        const apiDir = getDeviceApiDir();
-        if (!fs.existsSync(apiDir)) {
-            fs.mkdirSync(apiDir, { recursive: true });
+        // 1. Let user select a directory
+        const result = await dialog.showOpenDialog(mainWindow, {
+            title: 'Select project directory',
+            properties: ['openDirectory'],
+        });
+        if (result.canceled || result.filePaths.length === 0) {
+            return { success: false, canceled: true };
         }
+        const targetDir = result.filePaths[0];
 
-        // Configure VS Code to use embedded Python interpreter
-        const vscodeSettingsDir = path.join(apiDir, '.vscode');
-        if (!fs.existsSync(vscodeSettingsDir)) {
-            fs.mkdirSync(vscodeSettingsDir, { recursive: true });
-        }
-
-        const settingsFile = path.join(vscodeSettingsDir, 'settings.json');
         const pythonPath = PYTHON_PATH.replace(/\\/g, '/');
-        let settings = {};
-        if (fs.existsSync(settingsFile)) {
+        const pythonSettings = {
+            'python-envs.defaultEnvManager': 'ms-python.python:system',
+            'python.defaultInterpreterPath': pythonPath,
+        };
+
+        // 2a. Write to VS Code global settings (portable data dir)
+        const vscodeDir = path.dirname(vscodeExe);
+        const globalSettingsFile = path.join(vscodeDir, 'data', 'user-data', 'User', 'settings.json');
+        if (fs.existsSync(path.dirname(globalSettingsFile))) {
+            let globalSettings = {};
             try {
-                settings = JSON.parse(fs.readFileSync(settingsFile, 'utf-8'));
+                globalSettings = JSON.parse(fs.readFileSync(globalSettingsFile, 'utf-8'));
             } catch (e) {
-                settings = {};
+                globalSettings = {};
+            }
+            Object.assign(globalSettings, pythonSettings);
+            fs.writeFileSync(globalSettingsFile, JSON.stringify(globalSettings, null, 4), 'utf-8');
+        }
+
+        // 2b. Write to workspace .vscode/settings.json
+        const workspaceVscodeDir = path.join(targetDir, '.vscode');
+        if (!fs.existsSync(workspaceVscodeDir)) {
+            fs.mkdirSync(workspaceVscodeDir, { recursive: true });
+        }
+        const workspaceSettingsFile = path.join(workspaceVscodeDir, 'settings.json');
+        let workspaceSettings = {};
+        if (fs.existsSync(workspaceSettingsFile)) {
+            try {
+                workspaceSettings = JSON.parse(fs.readFileSync(workspaceSettingsFile, 'utf-8'));
+            } catch (e) {
+                workspaceSettings = {};
             }
         }
-        settings['python.defaultInterpreterPath'] = pythonPath;
-        fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 4), 'utf-8');
+        Object.assign(workspaceSettings, pythonSettings);
+        fs.writeFileSync(workspaceSettingsFile, JSON.stringify(workspaceSettings, null, 4), 'utf-8');
 
-        const child = spawn(vscodeExe, [apiDir], { detached: true, stdio: 'ignore' });
+        // 3. Copy template files (ice.py, ice_user.py) to target directory
+        const templateDir = getDeviceApiDir();
+        const templateFiles = [
+            path.join('ice_maker', 'ice.py'),
+            path.join('ice_maker', 'ice_user.py'),
+        ];
+        for (const relPath of templateFiles) {
+            const srcFile = path.join(templateDir, relPath);
+            if (fs.existsSync(srcFile)) {
+                const destFile = path.join(targetDir, path.basename(relPath));
+                if (!fs.existsSync(destFile)) {
+                    fs.copyFileSync(srcFile, destFile);
+                }
+            }
+        }
+
+        // 4. Open target directory in embedded VS Code
+        const child = spawn(vscodeExe, [targetDir], { detached: true, stdio: 'ignore' });
         child.unref();
 
         return { success: true };
@@ -757,7 +797,7 @@ function buildAppMenu() {
                 { label: '打开MCU库目录', click: () => sendToRenderer('menu:command', 'ramgs:openMcuLib') },
                 { label: '如何集成MCU库', click: () => sendToRenderer('menu:command', 'ramgs:showIntegrationGuide') },
                 { type: 'separator' },
-                { label: 'VS Code (device_api)', click: () => sendToRenderer('menu:command', 'tools:openVscode') },
+                { label: 'VS Code (打开项目)', click: () => sendToRenderer('menu:command', 'tools:openVscode') },
             ],
         },
         {

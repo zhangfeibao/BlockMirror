@@ -932,7 +932,7 @@
         </svg>
         自定义积木块
     </button>
-    <button id="vscode-btn" title="在 VS Code 中打开 device_api" onclick="openVscode()" style="display:none;">
+    <button id="vscode-btn" title="选择目录并用 VS Code 打开" onclick="openVscode()" style="display:none;">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <polyline points="5,2 1,8 5,14"/>
             <polyline points="11,2 15,8 11,14"/>
@@ -1585,6 +1585,7 @@
     function openVscode() {
         if (!window.electronAPI) return;
         window.electronAPI.openVscode().then(function(result) {
+            if (result.canceled) return;
             if (!result.success) {
                 alert(result.error);
             }
