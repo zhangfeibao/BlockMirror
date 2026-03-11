@@ -1622,7 +1622,7 @@
                     // 注册自动导入（仅当该模块前缀尚无内置 import 时）
                     if (!loadedCustomModuleImports[fn.module] &&
                         !BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[fn.module]) {
-                        BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[fn.module] = 'import ' + fn.module;
+                        BlockMirrorTextToBlocks.prototype.MODULE_FUNCTION_IMPORTS[fn.module] = 'from ' + fn.module + ' import ' + fn.module;
                         loadedCustomModuleImports[fn.module] = true;
                     }
                 } else {
