@@ -35,6 +35,9 @@
     <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
     <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
 
+    <!-- Marked.js for Markdown rendering -->
+    <script src="../lib/marked.min.js" type="text/javascript"></script>
+
     <style>
         * {
             box-sizing: border-box;
@@ -1714,6 +1717,8 @@
                 case 'ramgs:load': showLoadDialog(); break;
                 case 'ramgs:connect': showConnectDialog(); break;
                 case 'ramgs:disconnect': doDisconnect(); break;
+                case 'ramgs:openMcuLib': openMcuLibDirectory(); break;
+                case 'ramgs:showIntegrationGuide': showIntegrationGuide(); break;
                 case 'tools:openVscode': openVscode(); break;
             }
         });
@@ -2329,6 +2334,93 @@
             }
             refreshRamgsStatus();
         });
+    }
+
+    function openMcuLibDirectory() {
+        if (!window.electronAPI || !window.electronAPI.ramgsOpenMcuLib) return;
+
+        window.electronAPI.ramgsOpenMcuLib().then(function(result) {
+            if (!result.success) {
+                alert('无法打开MCU库目录: ' + (result.error || '未知错误'));
+            }
+        });
+    }
+
+    function showIntegrationGuide() {
+        if (!window.electronAPI || !window.electronAPI.ramgsShowIntegrationGuide) return;
+
+        window.electronAPI.ramgsShowIntegrationGuide().then(function(result) {
+            if (result.success) {
+                // 重新编排章节序号（从 9.x 改为 1.x）
+                var content = result.content;
+                content = content.replace(/^## 9\. MCU库集成/m, '# MCU库集成指南');
+                content = content.replace(/^### 9\.(\d+)/gm, '## $1.');
+                content = content.replace(/^#### /gm, '### ');
+
+                // 创建一个模态窗口显示帮助内容
+                var overlay = document.createElement('div');
+                overlay.className = 'ramgs-overlay open';
+                overlay.style.zIndex = '10000';
+                overlay.onclick = function(e) {
+                    if (e.target === overlay) overlay.remove();
+                };
+
+                var dialog = document.createElement('div');
+                dialog.className = 'ramgs-dialog';
+                dialog.style.maxWidth = '900px';
+                dialog.style.maxHeight = '80vh';
+                dialog.style.overflow = 'hidden';
+                dialog.style.display = 'flex';
+                dialog.style.flexDirection = 'column';
+
+                var header = document.createElement('div');
+                header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding-bottom: 12px; border-bottom: 1px solid #30363d; flex-shrink: 0;';
+                header.innerHTML = '<h3 style="margin: 0; color: #e6edf3;">MCU库集成指南</h3><button onclick="this.closest(\'.ramgs-overlay\').remove()" style="background: transparent; border: none; color: #8b949e; font-size: 24px; cursor: pointer; padding: 0; width: 32px; height: 32px;">&times;</button>';
+
+                var contentDiv = document.createElement('div');
+                contentDiv.style.cssText = 'color: #c9d1d9; line-height: 1.6; overflow-y: auto; flex: 1; margin-top: 16px; padding-right: 8px;';
+                contentDiv.className = 'markdown-body';
+
+                // 渲染 markdown
+                contentDiv.innerHTML = marked.parse(content);
+                applyMarkdownStyles(contentDiv);
+
+                dialog.appendChild(header);
+                dialog.appendChild(contentDiv);
+                overlay.appendChild(dialog);
+                document.body.appendChild(overlay);
+            } else {
+                alert('无法加载帮助文档: ' + (result.error || '未知错误'));
+            }
+        });
+    }
+
+    function applyMarkdownStyles(container) {
+        // 应用 GitHub 风格的 markdown 样式
+        var style = document.createElement('style');
+        style.textContent = `
+            .markdown-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; }
+            .markdown-body h1 { font-size: 24px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #30363d; color: #e6edf3; }
+            .markdown-body h2 { font-size: 20px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 1px solid #30363d; color: #e6edf3; }
+            .markdown-body h3 { font-size: 16px; font-weight: 600; margin-top: 24px; margin-bottom: 16px; color: #e6edf3; }
+            .markdown-body h4 { font-size: 14px; font-weight: 600; margin-top: 16px; margin-bottom: 8px; color: #e6edf3; }
+            .markdown-body p { margin-top: 0; margin-bottom: 16px; }
+            .markdown-body code { background: #161b22; padding: 2px 6px; border-radius: 3px; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; color: #f0883e; }
+            .markdown-body pre { background: #161b22; padding: 16px; border-radius: 6px; overflow-x: auto; margin-bottom: 16px; border: 1px solid #30363d; }
+            .markdown-body pre code { background: transparent; padding: 0; color: #c9d1d9; }
+            .markdown-body table { border-collapse: collapse; width: 100%; margin-bottom: 16px; }
+            .markdown-body table th, .markdown-body table td { border: 1px solid #30363d; padding: 8px 12px; text-align: left; }
+            .markdown-body table th { background: #161b22; font-weight: 600; }
+            .markdown-body ul, .markdown-body ol { margin-bottom: 16px; padding-left: 24px; }
+            .markdown-body li { margin-bottom: 4px; }
+            .markdown-body blockquote { border-left: 3px solid #30363d; padding-left: 16px; margin-left: 0; color: #8b949e; }
+            .markdown-body a { color: #58a6ff; text-decoration: none; }
+            .markdown-body a:hover { text-decoration: underline; }
+        `;
+        if (!document.getElementById('markdown-styles')) {
+            style.id = 'markdown-styles';
+            document.head.appendChild(style);
+        }
     }
 
     function closeRamgsOverlay(e, id) {

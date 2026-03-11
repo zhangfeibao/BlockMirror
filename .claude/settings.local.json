@@ -15,7 +15,8 @@
       "Bash(cd:*)",
       "Bash(cd /f/works_2026/BlockMirror && ./python-embedded/python.exe -m ramgs ports 2>&1)",
       "Bash(cd /f/works_2026/BlockMirror && ./python-embedded/python.exe -m ramgs status 2>&1)",
-      "Bash(cd F:/works_2026/BlockMirror && export NODE_OPTIONS=--openssl-legacy-provider && npm run devbuild 2>&1)"
+      "Bash(cd F:/works_2026/BlockMirror && export NODE_OPTIONS=--openssl-legacy-provider && npm run devbuild 2>&1)",
+      "Bash(curl:*)"
     ]
   }
 }

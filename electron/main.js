@@ -566,6 +566,58 @@ ipcMain.handle('ramgs:selectOutputDir', async () => {
     return { canceled: false, dirPath: result.filePaths[0] };
 });
 
+// ── 打开 MCU 库目录 ──
+ipcMain.handle('ramgs:openMcuLib', async () => {
+    const { shell } = require('electron');
+    const devPath = path.join(__dirname, '..', 'ramgs', 'mcu_lib');
+    const prodPath = path.join(process.resourcesPath || '', 'ramgs', 'mcu_lib');
+    const mcuLibPath = fs.existsSync(prodPath) ? prodPath : devPath;
+
+    if (fs.existsSync(mcuLibPath)) {
+        shell.openPath(mcuLibPath);
+        return { success: true };
+    } else {
+        return { success: false, error: 'MCU库目录不存在' };
+    }
+});
+
+// ── 显示 MCU 库集成帮助 ──
+ipcMain.handle('ramgs:showIntegrationGuide', async () => {
+    const devPath = path.join(__dirname, '..', 'ramgs', 'docs', 'user_manual_zh.md');
+    const prodPath = path.join(process.resourcesPath || '', 'ramgs', 'docs', 'user_manual_zh.md');
+    const docPath = fs.existsSync(prodPath) ? prodPath : devPath;
+
+    if (!fs.existsSync(docPath)) {
+        return { success: false, error: '帮助文档不存在' };
+    }
+
+    try {
+        const content = fs.readFileSync(docPath, 'utf-8');
+        // 提取 MCU 库集成部分（第9章）
+        const lines = content.split('\n');
+        let startIdx = -1;
+        let endIdx = -1;
+
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].startsWith('## 9. MCU库集成')) {
+                startIdx = i;
+            } else if (startIdx !== -1 && lines[i].startsWith('## 10.')) {
+                endIdx = i;
+                break;
+            }
+        }
+
+        if (startIdx === -1) {
+            return { success: false, error: '未找到MCU库集成章节' };
+        }
+
+        const integrationContent = lines.slice(startIdx, endIdx === -1 ? undefined : endIdx).join('\n');
+        return { success: true, content: integrationContent };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
 // ── VS Code 启动 IPC ──
 ipcMain.handle('vscode:open', async () => {
     try {
@@ -701,6 +753,9 @@ function buildAppMenu() {
                 { label: '加载符号表...', click: () => sendToRenderer('menu:command', 'ramgs:load') },
                 { label: '连接设备...', click: () => sendToRenderer('menu:command', 'ramgs:connect') },
                 { label: '断开设备', click: () => sendToRenderer('menu:command', 'ramgs:disconnect') },
+                { type: 'separator' },
+                { label: '打开MCU库目录', click: () => sendToRenderer('menu:command', 'ramgs:openMcuLib') },
+                { label: '如何集成MCU库', click: () => sendToRenderer('menu:command', 'ramgs:showIntegrationGuide') },
                 { type: 'separator' },
                 { label: 'VS Code (device_api)', click: () => sendToRenderer('menu:command', 'tools:openVscode') },
             ],

@@ -52,6 +52,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ramgsSelectElf: () => ipcRenderer.invoke('ramgs:selectElf'),
     ramgsSelectSymbols: () => ipcRenderer.invoke('ramgs:selectSymbols'),
     ramgsSelectOutputDir: () => ipcRenderer.invoke('ramgs:selectOutputDir'),
+    ramgsOpenMcuLib: () => ipcRenderer.invoke('ramgs:openMcuLib'),
+    ramgsShowIntegrationGuide: () => ipcRenderer.invoke('ramgs:showIntegrationGuide'),
 
     // VS Code
     openVscode: () => ipcRenderer.invoke('vscode:open'),
