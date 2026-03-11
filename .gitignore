@@ -96,6 +96,7 @@ typings/
 /ramgs
 /python-embedded
 /VSCode
+/release
 dist/block_mirror_unbundled.js
 dist/block_mirror.js
 dist/skulpt_parser.js

@@ -3,14 +3,12 @@
   "version": "2.0.0",
   "description": "A dual block/text editor using Blockly and CodeMirror for Python",
   "main": "electron/main.js",
-  "directories": {
-    "example": "example"
-  },
   "scripts": {
     "build": "webpack --mode production",
     "devbuild": "webpack --mode development",
     "watch": "webpack --watch --mode development",
-    "electron:start": "electron ."
+    "electron:start": "electron .",
+    "pack:win": "electron-builder --win --x64"
   },
   "repository": {
     "type": "git",
@@ -31,6 +29,7 @@
     "babel-loader": "^8.1.0",
     "babel-plugin-add-module-exports": "^1.0.2",
     "electron": "^40.8.0",
+    "electron-builder": "^26.8.1",
     "elliptic": "^6.5.3",
     "lodash": ">=4.17.19",
     "uglify-js": "^3.10.1",
@@ -39,6 +38,37 @@
     "webpack-dev-server": "^5.2.0",
     "webpack-merge-and-include-globally": "^2.1.25",
     "yargs": "^15.4.1"
+  },
+  "build": {
+    "appId": "com.blockmirror.app",
+    "productName": "MideaBlockly",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "test/simple_v2.html",
+      "dist/**/*",
+      "lib/**/*",
+      "blockfactory/**/*",
+      "custom-modules/**/*",
+      "node_modules/blockly/**/*",
+      "node_modules/@blockly/**/*",
+      "node_modules/@xterm/**/*"
+    ],
+    "extraResources": [
+      { "from": "python-embedded", "to": "python-embedded" },
+      { "from": "ramgs", "to": "ramgs" },
+      { "from": "VSCode", "to": "VSCode" },
+      { "from": "device_api", "to": "device_api" }
+    ],
+    "win": {
+      "target": "dir"
+    },
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/blockly/media/**/*"
+    ]
   },
   "dependencies": {
     "@blockly/field-multilineinput": "^5.0.13",
