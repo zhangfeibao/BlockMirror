@@ -4,19 +4,19 @@ BlockMirrorBlockEditor.EXTRA_TOOLS = {};
 
 const TOOLBOX_CATEGORY = {};
 
-TOOLBOX_CATEGORY.VARIABLES = {name: 'Variables', colour: 'VARIABLES', custom: 'VARIABLE'};
-TOOLBOX_CATEGORY.DECISIONS = {name: "Decisions", colour: "LOGIC", blocks: [
+TOOLBOX_CATEGORY.VARIABLES = {name: '变量', colour: 'VARIABLES', custom: 'VARIABLE'};
+TOOLBOX_CATEGORY.DECISIONS = {name: "判断", colour: "LOGIC", blocks: [
     'if ___: pass',
     'if ___: pass\nelse: pass',
     '___ < ___',
     '___ and ___',
     'not ___'
 ]};
-TOOLBOX_CATEGORY.CALCULATIONS = {name: "Calculation", colour: "MATH", blocks: [
+TOOLBOX_CATEGORY.CALCULATIONS = {name: "计算", colour: "MATH", blocks: [
     "___ + ___",
     "round(___)"
 ]};
-TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING = {name: "Output", colour: "PLOTTING", blocks: [
+TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING = {name: "输出", colour: "PLOTTING", blocks: [
     "print(___)",
     "plt.plot(___)",
     "plt.scatter(___, ___)",
@@ -30,7 +30,7 @@ TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING = {name: "Output", colour: "PLOTTING", blo
     "plt.hlines(___, ___, ___)",
     "plt.vlines(___, ___, ___)",
 ]};
-TOOLBOX_CATEGORY.TURTLES = {name: "Turtles", colour: "PLOTTING", blocks: [
+TOOLBOX_CATEGORY.TURTLES = {name: "画图", colour: "PLOTTING", blocks: [
     "turtle.mainloop()",
     "turtle.forward(50)",
     "turtle.backward(50)",
@@ -44,36 +44,36 @@ TOOLBOX_CATEGORY.TURTLES = {name: "Turtles", colour: "PLOTTING", blocks: [
     "turtle.penup()",
     "turtle.pencolor('blue')"
 ]};
-TOOLBOX_CATEGORY.INPUT = {name: "Input", colour: "TEXT", blocks: [
+TOOLBOX_CATEGORY.INPUT = {name: "输入", colour: "TEXT", blocks: [
     "input('')",
 ]};
-TOOLBOX_CATEGORY.VALUES = {name: "Values", colour: "TEXT", blocks: [
+TOOLBOX_CATEGORY.VALUES = {name: "字面值", colour: "TEXT", blocks: [
     '""',
     "0",
     "True"
 ]};
 TOOLBOX_CATEGORY.SEP = "<sep></sep>";
 
-TOOLBOX_CATEGORY.CONVERSIONS = {name: "Conversion", colour: "TEXT", blocks: [
+TOOLBOX_CATEGORY.CONVERSIONS = {name: "类型转换", colour: "TEXT", blocks: [
     "int(___)",
     "float(___)",
     "str(___)",
     "bool(___)"
 ]};
 
-TOOLBOX_CATEGORY.DICTIONARIES = {name: "Dictionaries", colour: "DICTIONARY", blocks: [
+TOOLBOX_CATEGORY.DICTIONARIES = {name: "字典", colour: "DICTIONARY", blocks: [
     "{'1st key': ___, '2nd key': ___, '3rd key': ___}",
     "{}",
     "___['key']"
 ]};
 
-TOOLBOX_CATEGORY.AUGMENTED_ASSIGN = {name: "Augmented Assignment", colour: "VARIABLES", blocks: [
+TOOLBOX_CATEGORY.AUGMENTED_ASSIGN = {name: "复合赋值", colour: "VARIABLES", blocks: [
     "___ += 1",
     "___ -= 1",
     "___ *= ___",
 ]};
 
-TOOLBOX_CATEGORY.MATH_MODULE = {name: "Math Module", colour: "MATH", blocks: [
+TOOLBOX_CATEGORY.MATH_MODULE = {name: "数学模块", colour: "MATH", blocks: [
     "import math",
     "math.sqrt(___)",
     "math.floor(___)",
@@ -84,14 +84,14 @@ TOOLBOX_CATEGORY.MATH_MODULE = {name: "Math Module", colour: "MATH", blocks: [
     "math.pi",
 ]};
 
-TOOLBOX_CATEGORY.RANDOM_MODULE = {name: "Random Module", colour: "MATH", blocks: [
+TOOLBOX_CATEGORY.RANDOM_MODULE = {name: "随机模块", colour: "MATH", blocks: [
     "import random",
     "random.randint(0, 10)",
     "random.random()",
     "random.choice(___)",
 ]};
 
-TOOLBOX_CATEGORY.LIST_METHODS = {name: "List Methods", colour: "LIST", blocks: [
+TOOLBOX_CATEGORY.LIST_METHODS = {name: "列表方法", colour: "LIST", blocks: [
     "___.append(___)",
     "___.insert(___, ___)",
     "___.remove(___)",
@@ -104,7 +104,7 @@ TOOLBOX_CATEGORY.LIST_METHODS = {name: "List Methods", colour: "LIST", blocks: [
     "___.extend(___)",
 ]};
 
-TOOLBOX_CATEGORY.DICT_METHODS = {name: "Dict Methods", colour: "DICTIONARY", blocks: [
+TOOLBOX_CATEGORY.DICT_METHODS = {name: "字典方法", colour: "DICTIONARY", blocks: [
     "___.keys()",
     "___.values()",
     "___.items()",
@@ -113,7 +113,7 @@ TOOLBOX_CATEGORY.DICT_METHODS = {name: "Dict Methods", colour: "DICTIONARY", blo
     "___.pop(___)",
 ]};
 
-TOOLBOX_CATEGORY.SETS = {name: "Sets", colour: "SET", blocks: [
+TOOLBOX_CATEGORY.SETS = {name: "集合", colour: "SET", blocks: [
     "{___, ___, ___}",
     "set(___)",
     "___.add(___)",
@@ -121,7 +121,7 @@ TOOLBOX_CATEGORY.SETS = {name: "Sets", colour: "SET", blocks: [
     "___.discard(___)",
 ]};
 
-TOOLBOX_CATEGORY.STRING_METHODS = {name: "String Methods", colour: "TEXT", blocks: [
+TOOLBOX_CATEGORY.STRING_METHODS = {name: "字符串方法", colour: "TEXT", blocks: [
     "len(___)",
     "___.find(___)",
     "___.upper()",
@@ -139,7 +139,7 @@ TOOLBOX_CATEGORY.STRING_METHODS = {name: "String Methods", colour: "TEXT", block
 BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     //******************************************************
     'empty': [
-        {"name": "Empty Toolbox", "colour": "PYTHON", "blocks": []}
+        {"name": "空工具箱", "colour": "PYTHON", "blocks": []}
     ],
     //******************************************************
     'minimal': [
@@ -151,20 +151,20 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.VARIABLES,
         TOOLBOX_CATEGORY.AUGMENTED_ASSIGN,
         TOOLBOX_CATEGORY.DECISIONS,
-        {name: "Iteration", colour: "CONTROL", blocks: [
+        {name: "迭代循环", colour: "CONTROL", blocks: [
             'for ___ in ___: pass',
             'for ___ in range(0, 10): pass',
             'while ___: pass',
             'break',
             'continue',
         ]},
-        {name: "Functions", colour: "FUNCTIONS", blocks: [
+        {name: "函数", colour: "FUNCTIONS", blocks: [
             "def ___(___): pass",
             "def ___(___: int)->str: pass",
             "return ___",
         ]},
         TOOLBOX_CATEGORY.SEP,
-        {name: "Calculation", colour: "MATH", blocks: [
+        {name: "计算", colour: "MATH", blocks: [
             "___ + ___",
             "___ - ___",
             "___ * ___",
@@ -185,7 +185,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.SEP,
         TOOLBOX_CATEGORY.VALUES,
         TOOLBOX_CATEGORY.CONVERSIONS,
-        {name: "Lists", colour: "LIST", blocks: [
+        {name: "列表", colour: "LIST", blocks: [
             "[0, 0, 0]",
             "[___, ___, ___]",
             "[]",
@@ -202,12 +202,13 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.MATH_MODULE,
         TOOLBOX_CATEGORY.RANDOM_MODULE,
         TOOLBOX_CATEGORY.SETS,
+        TOOLBOX_CATEGORY.SEP,
     ],
     //******************************************************
     'ct': [
         TOOLBOX_CATEGORY.VARIABLES,
         TOOLBOX_CATEGORY.DECISIONS,
-        {name: "Iteration", colour: "CONTROL", blocks: [
+        {name: "迭代", colour: "CONTROL", blocks: [
             'for ___ in ___: pass',
         ]},
         TOOLBOX_CATEGORY.SEP,
@@ -217,7 +218,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.SEP,
         TOOLBOX_CATEGORY.VALUES,
         TOOLBOX_CATEGORY.CONVERSIONS,
-        {name: "Lists", colour: "LIST", blocks: [
+        {name: "列表", colour: "LIST", blocks: [
             "[0, 0, 0]",
             "[___, ___, ___]",
             "[]",
@@ -228,7 +229,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     'full': [
         TOOLBOX_CATEGORY.VARIABLES,
         TOOLBOX_CATEGORY.AUGMENTED_ASSIGN,
-        {name: "Literal Values", colour: "LIST", blocks: [
+        {name: "字面值", colour: "LIST", blocks: [
             "0",
             "''",
             "True",
@@ -238,7 +239,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
             "{___, ___, ___}",
             "{___: ___, ___: ___, ___: ___}",
             ]},
-        {name: "Calculations", colour: "MATH", blocks: [
+        {name: "计算", colour: "MATH", blocks: [
             "-___",
             "___ + ___",
             "___ - ___",
@@ -251,7 +252,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
             "abs(___)",
             "round(___)",
         ]},
-        {name: "Logic", colour: "LOGIC", blocks: [
+        {name: "逻辑", colour: "LOGIC", blocks: [
             '___ if ___ else ___',
             '___ == ___',
             '___ < ___',
@@ -260,28 +261,28 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
             'not ___'
         ]},
         TOOLBOX_CATEGORY.SEP,
-        {name: "Classes", colour: "OO", blocks: [
+        {name: "类", colour: "OO", blocks: [
             "class ___: pass",
             "class ___(___): pass",
             "___.___",
             "___: ___",
             "super()"
         ]},
-        {name: "Functions", colour: "FUNCTIONS", blocks: [
+        {name: "函数", colour: "FUNCTIONS", blocks: [
             "def ___(___): pass",
             "def ___(___: int)->str: pass",
             "return ___",
             "yield ___",
             "lambda ___: ___"
         ]},
-        {name: "Imports", colour: "PYTHON", blocks: [
+        {name: "导入", colour: "PYTHON", blocks: [
             "import ___",
             "from ___ import ___",
             "import ___ as ___",
             "from ___ import ___ as ___"
         ]},
         TOOLBOX_CATEGORY.SEP,
-        {name: "Control Flow", colour: "CONTROL", blocks: [
+        {name: "控制流", colour: "CONTROL", blocks: [
             'if ___: pass',
             'if ___: pass\nelse: pass',
             'for ___ in ___: pass',
@@ -296,7 +297,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.SEP,
         TOOLBOX_CATEGORY.OUTPUT_WITH_PLOTTING,
         TOOLBOX_CATEGORY.INPUT,
-        {name: "Files", colour: "FILE", blocks: [
+        {name: "文件", colour: "FILE", blocks: [
             "with open('', 'r') as ___: pass",
             "___.read()",
             "___.readlines()",
@@ -304,7 +305,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
             "___.writelines(___)"
         ]},
         TOOLBOX_CATEGORY.SEP,
-        {name: "Conversion", colour: "TEXT", blocks: [
+        {name: "类型转换", colour: "TEXT", blocks: [
             "int(___)",
             "float(___)",
             "str(___)",
@@ -317,7 +318,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
             "type(___)",
             "isinstance(___)"
         ]},
-        {name: "Builtin Functions", colour: "SEQUENCES", blocks: [
+        {name: "内置函数", colour: "SEQUENCES", blocks: [
             "len(___)",
             "sorted(___)",
             "enumerate(___)",
@@ -336,12 +337,12 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.STRING_METHODS,
         TOOLBOX_CATEGORY.DICT_METHODS,
         TOOLBOX_CATEGORY.SETS,
-        {name: "Subscripting", colour: "SEQUENCES", blocks: [
+        {name: "索引切片", colour: "SEQUENCES", blocks: [
             "___[___]",
             "___[___:___]",
             "___[___:___:___]"
         ]},
-        {name: "Generators", colour: "SEQUENCES", blocks: [
+        {name: "生成器", colour: "SEQUENCES", blocks: [
             "[___ for ___ in ___]",
             "(___ for ___ in ___)",
             "{___ for ___ in ___}",
@@ -354,7 +355,7 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
         TOOLBOX_CATEGORY.SEP,
         TOOLBOX_CATEGORY.MATH_MODULE,
         TOOLBOX_CATEGORY.RANDOM_MODULE,
-        {name: "Comments", colour: "PYTHON", blocks: [
+        {name: "注释", colour: "PYTHON", blocks: [
             "# ",
             '"""\n"""'
         ]}/*,
@@ -365,11 +366,11 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
     ],
     //******************************************************
     'ct2': [
-        {name: 'Memory', colour: 'VARIABLES', custom: 'VARIABLE', hideGettersSetters: true},
+        {name: '存储', colour: 'VARIABLES', custom: 'VARIABLE', hideGettersSetters: true},
         TOOLBOX_CATEGORY.SEP,
 
         '<category name="Expressions" expanded="true">',
-        {name: "Constants", colour: "TEXT", blocks: [
+        {name: "常量", colour: "TEXT", blocks: [
                 '""',
                 "0",
                 "True",
@@ -377,12 +378,12 @@ BlockMirrorBlockEditor.prototype.TOOLBOXES = {
                 "[___, ___, ___]",
                 "[]",
             ]},
-        {name: "Variables", colour: "VARIABLES", blocks: [
+        {name: "变量", colour: "VARIABLES", blocks: [
                 "VARIABLE",
             ]},
         TOOLBOX_CATEGORY.CALCULATIONS,
         TOOLBOX_CATEGORY.CONVERSIONS,
-        {name: "Conditions", colour: "LOGIC", blocks: [
+        {name: "条件", colour: "LOGIC", blocks: [
                 '___ == ___',
                 '___ and ___',
                 'not ___'
