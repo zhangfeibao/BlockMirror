@@ -8,7 +8,6 @@ const { AiSettingsStore } = require('./ai-settings-store');
 const { AiConversationsStore } = require('./ai-conversations-store');
 
 let mainWindow = null;
-nativeTheme.themeSource = 'dark';
 let pythonProcess = null;
 let shellProcess = null;
 let blockFactoryWindow = null;
@@ -821,6 +820,7 @@ function buildAppMenu() {
 }
 
 app.whenReady().then(() => {
+    nativeTheme.themeSource = 'dark';
     const userData = app.getPath('userData');
     customModulesStore = new CustomModulesStore(userData);
     aiClient = new AiClient();
