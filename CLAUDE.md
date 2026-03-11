@@ -10,6 +10,7 @@ npm run build                # Production build (minified)
 npm run devbuild             # Development build
 npm run watch                # Watch mode for development
 npm run electron:start       # Launch Electron desktop app
+npm run pack:win             # Package as Windows app (output: release/win-unpacked/)
 ```
 
 If you encounter `Error: error:0308010C:digital envelope routines::unsupported`, run first:
@@ -306,3 +307,49 @@ Module-prefixed functions (e.g. `turtle.forward()`) use `BlockMirrorTextToBlocks
 ## Skulpt Fork
 
 The `src/skulpt/` directory is a vendored copy of a custom Skulpt fork (not the npm package). It adds features like end-line-number tracking and missing AST nodes compared to upstream Skulpt. If you need to update it, changes must come from the [blockpy-edu/skulpt](https://github.com/blockpy-edu/skulpt) fork.
+
+## Packaging (electron-builder)
+
+The app is packaged for Windows using `electron-builder`. Configuration lives in the `"build"` field of `package.json`.
+
+```bash
+npm run devbuild   # must build dist/ first
+npm run pack:win   # produces release/win-unpacked/MideaBlockly.exe
+```
+
+Key design:
+- **`files`** — app code packed into asar: `electron/`, `test/simple_v2.html`, `dist/`, `lib/`, `blockfactory/`, `custom-modules/`, and runtime `node_modules` (blockly, @blockly, @xterm)
+- **`extraResources`** — large external tools copied outside asar to `resources/`: `python-embedded/`, `ramgs/`, `VSCode/`, `device_api/`
+- **`asarUnpack`** — `node_modules/blockly/media/**/*` must be unpacked so Blockly can access media files by filesystem path
+- **`target: "dir"`** — outputs unpacked directory; change to `"nsis"` for an installer
+
+## Dev vs Packaged Path Resolution
+
+`electron/main.js` uses a dual-path pattern for all external tools. In development, paths resolve relative to `__dirname/..`; in packaged mode, they resolve via `process.resourcesPath`:
+
+```javascript
+// Pattern used by getEmbeddedPythonPath(), getVscodeExePath(), getDeviceApiDir(), ensureRamgsInPath()
+const devPath = path.join(__dirname, '..', 'tool-dir', 'executable');
+const prodPath = path.join(process.resourcesPath || '', 'tool-dir', 'executable');
+if (fs.existsSync(prodPath)) return prodPath;
+if (fs.existsSync(devPath)) return devPath;
+return 'fallback';
+```
+
+When adding new external tools, follow this pattern and add the directory to `extraResources` in `package.json`.
+
+Python execution also calls `buildPythonEnv()` which strips `PYTHONHOME` and `PYTHONPATH` from the environment to prevent system Python from interfering with the embedded runtime.
+
+## VS Code Integration
+
+The `vscode:open` IPC handler launches an embedded portable VS Code (`VSCode/Code.exe`) for Python editing:
+- Configures the Python interpreter path in VS Code settings (global + workspace)
+- Copies device API templates (`ice.py`, `ice_user.py`) from `device_api/` to the target project directory
+- VS Code uses a portable data directory (`VSCode/data/`) so it doesn't conflict with system VS Code
+
+## Device API Templates
+
+`device_api/` contains hardware API modules copied to user projects when opening VS Code:
+- `ice_maker/ice.py` — hardware API module for MCU control
+- `ice_maker/ice_user.py` — user code template
+- `demo.py` — example usage
