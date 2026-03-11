@@ -977,7 +977,7 @@
         </svg>
         <span id="run-label">运行</span>
     </button>
-    <button id="ai-chat-btn" title="AI 助手 (Ctrl+Shift+A)" onclick="toggleAiChat()">
+    <button id="ai-chat-btn" class="active" title="AI 助手 (Ctrl+Shift+A)" onclick="toggleAiChat()">
         <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
             <path d="M2 3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3 3V3z"/>
             <line x1="5" y1="5" x2="11" y2="5"/>
@@ -1003,7 +1003,7 @@
 </div>
 
 <!-- AI 聊天面板 -->
-<div id="ai-chat-panel" class="hidden">
+<div id="ai-chat-panel">
     <div id="ai-chat-header">
         <select id="ai-model-select" onchange="onAiModelChange(this.value)">
             <option value="gpt-5">GPT-5</option>
