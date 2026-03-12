@@ -39,7 +39,7 @@ COMMANDS = {
 }
 
 # Common baud rates
-BAUD_RATES = ['9600', '19200', '38400', '57600', '115200', '230400']
+BAUD_RATES = ['2400','4800','9600', '19200', '38400', '57600', '115200', '230400']
 
 
 class RamgsCompleter(Completer):

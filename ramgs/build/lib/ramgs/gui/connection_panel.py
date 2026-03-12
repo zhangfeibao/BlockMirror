@@ -19,7 +19,7 @@ class ConnectionPanel(QWidget):
     connection_changed = Signal(bool, str)  # connected, message
 
     # Common baud rates
-    BAUD_RATES = [9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]
+    BAUD_RATES = [2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600]
 
     def __init__(self, parent=None):
         super().__init__(parent)
