@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog, nativeTheme } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, nativeTheme, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
@@ -12,6 +12,8 @@ let pythonProcess = null;
 let shellProcess = null;
 let blockFactoryWindow = null;
 let moduleManagerWindow = null;
+let advancedTerminalWindow = null;
+let ptyProcess = null;
 let customModulesStore = null;
 let aiClient = null;
 let aiSettingsStore = null;
@@ -26,6 +28,14 @@ function getEmbeddedPythonPath() {
 }
 
 const PYTHON_PATH = getEmbeddedPythonPath();
+
+function getEmbeddedPythonDir() {
+    const devPath = path.join(__dirname, '..', 'python-embedded');
+    const prodPath = path.join(process.resourcesPath || '', 'python-embedded');
+    if (fs.existsSync(prodPath)) return prodPath;
+    if (fs.existsSync(devPath)) return devPath;
+    return null;
+}
 
 /**
  * Build a clean env for spawning Python processes.
@@ -196,6 +206,84 @@ ipcMain.on('window:forceClose', () => {
         mainWindow.removeAllListeners('close');
         mainWindow.close();
     }
+});
+
+// ── 高级终端窗口 (node-pty) ──
+ipcMain.on('advanced-terminal:open', () => {
+    if (advancedTerminalWindow && !advancedTerminalWindow.isDestroyed()) {
+        advancedTerminalWindow.focus();
+        return;
+    }
+    advancedTerminalWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        title: 'Advanced Terminal - BlockMirror',
+        backgroundColor: '#0d1117',
+        autoHideMenuBar: true,
+        webPreferences: {
+            nodeIntegration: false,
+            contextIsolation: true,
+            preload: path.join(__dirname, '..', 'advanced-terminal', 'terminal-preload.js'),
+        },
+    });
+    advancedTerminalWindow.setMenu(null);
+    advancedTerminalWindow.loadFile(path.join(__dirname, '..', 'advanced-terminal', 'terminal.html'));
+    advancedTerminalWindow.on('closed', () => {
+        if (ptyProcess) { ptyProcess.kill(); ptyProcess = null; }
+        advancedTerminalWindow = null;
+    });
+});
+
+ipcMain.handle('pty:spawn', async () => {
+    const pty = require('node-pty');
+    if (ptyProcess) { ptyProcess.kill(); ptyProcess = null; }
+
+    const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+    const shellArgs = process.platform === 'win32' ? ['-NoProfile', '-NoLogo'] : ['--norc', '--noprofile'];
+    const env = { ...process.env };
+    delete env.PYTHONHOME;
+    delete env.PYTHONPATH;
+
+    const pythonDir = getEmbeddedPythonDir();
+    if (pythonDir) {
+        const scriptsDir = path.join(pythonDir, 'Scripts');
+        const sep = process.platform === 'win32' ? ';' : ':';
+        const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH';
+        env[pathKey] = pythonDir + sep + scriptsDir + sep + (env[pathKey] || '');
+    }
+
+    ptyProcess = pty.spawn(shell, shellArgs, {
+        name: 'xterm-256color',
+        cols: 80,
+        rows: 24,
+        cwd: process.env.USERPROFILE || process.env.HOME,
+        env: env,
+    });
+
+    ptyProcess.onData((data) => {
+        if (advancedTerminalWindow && !advancedTerminalWindow.isDestroyed()) {
+            advancedTerminalWindow.webContents.send('pty:data', data);
+        }
+    });
+    ptyProcess.onExit(({ exitCode }) => {
+        ptyProcess = null;
+        if (advancedTerminalWindow && !advancedTerminalWindow.isDestroyed()) {
+            advancedTerminalWindow.webContents.send('pty:exit', { exitCode });
+        }
+    });
+    return { success: true };
+});
+
+ipcMain.on('pty:write', (_, data) => {
+    if (ptyProcess) ptyProcess.write(data);
+});
+
+ipcMain.on('pty:resize', (_, { cols, rows }) => {
+    if (ptyProcess) ptyProcess.resize(cols, rows);
+});
+
+ipcMain.on('clipboard:write', (_, text) => {
+    clipboard.writeText(text);
 });
 
 // 自定义积木块窗口
@@ -734,6 +822,8 @@ function createWindow() {
     mainWindow.on('closed', () => {
         if (pythonProcess) pythonProcess.kill();
         if (shellProcess) shellProcess.kill();
+        if (ptyProcess) { ptyProcess.kill(); ptyProcess = null; }
+        if (advancedTerminalWindow && !advancedTerminalWindow.isDestroyed()) advancedTerminalWindow.close();
         mainWindow = null;
     });
 }
@@ -797,6 +887,8 @@ function buildAppMenu() {
                 { label: '如何集成MCU库', click: () => sendToRenderer('menu:command', 'ramgs:showIntegrationGuide') },
                 { type: 'separator' },
                 { label: 'VS Code (打开项目)', click: () => sendToRenderer('menu:command', 'tools:openVscode') },
+                { type: 'separator' },
+                { label: '高级终端', accelerator: 'CmdOrCtrl+Shift+T', click: () => sendToRenderer('menu:command', 'tools:advancedTerminal') },
             ],
         },
         {

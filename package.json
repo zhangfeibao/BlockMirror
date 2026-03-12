@@ -52,28 +52,43 @@
       "lib/**/*",
       "blockfactory/**/*",
       "custom-modules/**/*",
+      "advanced-terminal/**/*",
       "node_modules/blockly/**/*",
       "node_modules/@blockly/**/*",
       "node_modules/@xterm/**/*"
     ],
     "extraResources": [
-      { "from": "python-embedded", "to": "python-embedded" },
-      { "from": "ramgs", "to": "ramgs" },
-      { "from": "VSCode", "to": "VSCode" },
-      { "from": "device_api", "to": "device_api" }
+      {
+        "from": "python-embedded",
+        "to": "python-embedded"
+      },
+      {
+        "from": "ramgs",
+        "to": "ramgs"
+      },
+      {
+        "from": "VSCode",
+        "to": "VSCode"
+      },
+      {
+        "from": "device_api",
+        "to": "device_api"
+      }
     ],
     "win": {
       "target": "dir"
     },
     "asar": true,
     "asarUnpack": [
-      "node_modules/blockly/media/**/*"
+      "node_modules/blockly/media/**/*",
+      "node_modules/node-pty/**/*"
     ]
   },
   "dependencies": {
     "@blockly/field-multilineinput": "^5.0.13",
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
-    "blockly": "^11.2.1"
+    "blockly": "^11.2.1",
+    "node-pty": "^1.1.0"
   }
 }

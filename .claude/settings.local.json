@@ -18,7 +18,16 @@
       "Bash(cd F:/works_2026/BlockMirror && export NODE_OPTIONS=--openssl-legacy-provider && npm run devbuild 2>&1)",
       "Bash(curl:*)",
       "Bash(tail:*)",
-      "Bash(cd F:/works_2026/BlockMirror && npm run pack:win 2>&1)"
+      "Bash(cd F:/works_2026/BlockMirror && npm run pack:win 2>&1)",
+      "Bash(cd \"F:/works_2026/BlockMirror\" && npm install node-pty 2>&1)",
+      "Bash(cd \"F:/works_2026/BlockMirror\" && npx electron-rebuild -f -w node-pty 2>&1)",
+      "Bash(where:*)",
+      "Bash(npm config:*)",
+      "Bash(cd \"F:/works_2026/BlockMirror\" && GYP_MSVS_VERSION=2025 GYP_MSVS_OVERRIDE_PATH=\"D:/Program Files/Microsoft Visual Studio/18/Community\" npx electron-rebuild -f -w node-pty 2>&1)",
+      "Bash(\"C:/Program Files \\(x86\\)/Microsoft Visual Studio/Installer/vswhere.exe\":*)",
+      "Bash(cd \"F:/works_2026/BlockMirror\" && npm config set msbuild_args=\"[\\\\\"/p:SpectreMitigation=false\\\\\"]\" && npx electron-rebuild -f -w node-pty 2>&1)",
+      "Bash(cd \"F:/works_2026/BlockMirror\" && npm_config_msbuild_args=\"/p:SpectreMitigation=false\" npx electron-rebuild -f -w node-pty 2>&1)",
+      "Bash(cd \"F:/works_2026/BlockMirror\" && MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL=\"*\" npx electron-rebuild -f -w node-pty 2>&1)"
     ]
   }
 }

@@ -276,7 +276,8 @@
 
         #blockfactory-btn,
         #module-manager-btn,
-        #vscode-btn {
+        #vscode-btn,
+        #advanced-terminal-btn {
             display: none;
             align-items: center;
             gap: 6px;
@@ -295,7 +296,8 @@
 
         #blockfactory-btn:hover,
         #module-manager-btn:hover,
-        #vscode-btn:hover {
+        #vscode-btn:hover,
+        #advanced-terminal-btn:hover {
             background: #30363d;
             color: #e6edf3;
             border-color: #484f58;
@@ -303,7 +305,8 @@
 
         #blockfactory-btn svg,
         #module-manager-btn svg,
-        #vscode-btn svg {
+        #vscode-btn svg,
+        #advanced-terminal-btn svg {
             width: 14px;
             height: 14px;
             flex-shrink: 0;
@@ -949,6 +952,14 @@
         </svg>
         模块管理
     </button>
+    <button id="advanced-terminal-btn" title="打开高级终端 (Ctrl+Shift+T)" onclick="openAdvancedTerminal()" style="display:none;">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="1" y="2" width="14" height="12" rx="1.5"/>
+            <polyline points="4,6 7,9 4,12"/>
+            <line x1="9" y1="12" x2="12" y2="12"/>
+        </svg>
+        高级终端
+    </button>
     <div id="ramgs-toolbar">
         <button class="ramgs-tool-btn" title="生成符号表" onclick="showCreateDialog()">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1592,6 +1603,11 @@
         });
     }
 
+    function openAdvancedTerminal() {
+        if (!window.electronAPI || !window.electronAPI.openAdvancedTerminal) return;
+        window.electronAPI.openAdvancedTerminal();
+    }
+
     var loadedCustomFunctions = {};
     var loadedCustomModuleKeys = {};
     var loadedCustomModuleImports = {};
@@ -1692,6 +1708,9 @@
         if (aiChatBtn) aiChatBtn.style.display = 'flex';
         if (vscodeBtn) vscodeBtn.style.display = 'flex';
 
+        var advTermBtn = document.getElementById('advanced-terminal-btn');
+        if (advTermBtn) advTermBtn.style.display = 'flex';
+
         // ramgs toolbar + status bar
         var ramgsToolbar = document.getElementById('ramgs-toolbar');
         var statusBar = document.getElementById('status-bar');
@@ -1721,6 +1740,7 @@
                 case 'ramgs:openMcuLib': openMcuLibDirectory(); break;
                 case 'ramgs:showIntegrationGuide': showIntegrationGuide(); break;
                 case 'tools:openVscode': openVscode(); break;
+                case 'tools:advancedTerminal': openAdvancedTerminal(); break;
             }
         });
 

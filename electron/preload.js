@@ -58,6 +58,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     // VS Code
     openVscode: () => ipcRenderer.invoke('vscode:open'),
 
+    // Advanced Terminal
+    openAdvancedTerminal: () => ipcRenderer.send('advanced-terminal:open'),
+
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {
         const fn = (_, data) => callback(data);

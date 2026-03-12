@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Terminal</title>
+    <link rel="stylesheet" href="../node_modules/@xterm/xterm/css/xterm.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #0d1117;
+        }
+        #terminal-container {
+            width: 100%;
+            height: 100%;
+            padding: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div id="terminal-container"></div>
+
+    <script src="../node_modules/@xterm/xterm/lib/xterm.js"></script>
+    <script src="../node_modules/@xterm/addon-fit/lib/addon-fit.js"></script>
+    <script>
+        (function() {
+            var term = new Terminal({
+                fontSize: 14,
+                fontFamily: 'Consolas, "Courier New", monospace',
+                theme: {
+                    background: '#0d1117',
+                    foreground: '#e6edf3',
+                    cursor: '#e6edf3',
+                    selectionBackground: '#264f78',
+                    black: '#0d1117',
+                    red: '#ff7b72',
+                    green: '#3fb950',
+                    yellow: '#d29922',
+                    blue: '#58a6ff',
+                    magenta: '#bc8cff',
+                    cyan: '#39c5cf',
+                    white: '#e6edf3',
+                    brightBlack: '#484f58',
+                    brightRed: '#ffa198',
+                    brightGreen: '#56d364',
+                    brightYellow: '#e3b341',
+                    brightBlue: '#79c0ff',
+                    brightMagenta: '#d2a8ff',
+                    brightCyan: '#56d4dd',
+                    brightWhite: '#f0f6fc',
+                },
+                cursorBlink: true,
+                scrollback: 5000,
+                allowProposedApi: true,
+            });
+
+            var fitAddon = new FitAddon.FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(document.getElementById('terminal-container'));
+            fitAddon.fit();
+
+            // Forward user input to PTY
+            term.onData(function(data) {
+                window.terminalAPI.write(data);
+            });
+
+            // Copy/Paste support
+            // Ctrl+Shift+C = copy selection, Ctrl+Shift+V = paste
+            term.attachCustomKeyEventHandler(function(ev) {
+                if (ev.type !== 'keydown') return true;
+                if (ev.ctrlKey && ev.shiftKey && ev.code === 'KeyC') {
+                    var sel = term.getSelection();
+                    if (sel) window.terminalAPI.clipboardWrite(sel);
+                    return false;
+                }
+                if (ev.ctrlKey && ev.shiftKey && ev.code === 'KeyV') {
+                    var text = window.terminalAPI.clipboardRead();
+                    if (text) window.terminalAPI.write(text);
+                    return false;
+                }
+                return true;
+            });
+
+            // Select text with mouse = auto copy
+            term.onSelectionChange(function() {
+                var sel = term.getSelection();
+                if (sel) window.terminalAPI.clipboardWrite(sel);
+            });
+
+            // Right-click = paste
+            document.getElementById('terminal-container').addEventListener('contextmenu', function(ev) {
+                ev.preventDefault();
+                var text = window.terminalAPI.clipboardRead();
+                if (text) window.terminalAPI.write(text);
+            });
+
+            // Receive PTY output
+            window.terminalAPI.onData(function(data) {
+                term.write(data);
+            });
+
+            // Handle PTY exit
+            window.terminalAPI.onExit(function(info) {
+                term.write('\r\n\x1b[90m[Process exited with code ' + info.exitCode + ']\x1b[0m\r\n');
+            });
+
+            // Resize handling
+            var resizeTimeout = null;
+            function handleResize() {
+                if (resizeTimeout) clearTimeout(resizeTimeout);
+                resizeTimeout = setTimeout(function() {
+                    fitAddon.fit();
+                    window.terminalAPI.resize(term.cols, term.rows);
+                }, 100);
+            }
+            window.addEventListener('resize', handleResize);
+
+            // Spawn PTY after terminal is ready
+            window.terminalAPI.spawn().then(function(result) {
+                if (!result.success) {
+                    term.write('\x1b[31mFailed to start terminal process.\x1b[0m\r\n');
+                }
+                // Send initial size after spawn
+                window.terminalAPI.resize(term.cols, term.rows);
+            });
+
+            // Focus terminal
+            term.focus();
+        })();
+    </script>
+</body>
+</html>

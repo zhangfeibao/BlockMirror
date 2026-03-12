@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "id": "mod_mmkfizsk_g6qnca",
+      "name": "制冰机",
+      "colour": 210,
+      "description": "",
+      "functions": [
+        {
+          "id": "fn_mmkfjek9_k8xf6e",
+          "name": "set_compressor",
+          "displayName": "设置压缩机",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmkfke2z_fqnzf7",
+          "name": "set_fan",
+          "displayName": "设置散热风机",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlpwans_1p1g6e",
+          "name": "set_refrigerant_valve",
+          "displayName": "设置冷媒阀",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlrvlq4_5z3e6o",
+          "name": "set_loop_pump",
+          "displayName": "设置水盒循环水泵",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlrxp8x_suhl03",
+          "name": "set_coldwater_out_pump",
+          "displayName": "设置冷水出水水泵",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlryq5t_pes5q6",
+          "name": "set_ice_outlet_valve",
+          "displayName": "设置出冰电磁阀",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlrzxex_3d0uv6",
+          "name": "set_drain_valve",
+          "displayName": "设置排水阀",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls0mkg_wvrz8o",
+          "name": "set_drain_pump",
+          "displayName": "设置排水泵",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls1u3c_cfzk57",
+          "name": "set_cool_func_switch",
+          "displayName": "设置制冷功能开关",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls2t60_4podqe",
+          "name": "set_ice_func_switch",
+          "displayName": "设置制冰功能开关",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "on_off"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls4euv_tveaj1",
+          "name": "set_ice_making_timer",
+          "displayName": "设置制冰运行时间",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "time_msec"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls5qse_fhegin",
+          "name": "set_harvesting_timer",
+          "displayName": "设置脱冰运行时间",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "time_msec"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls72y8_xpdadk",
+          "name": "set_target_ice_making_time",
+          "displayName": "设置目标制冰时间",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "time_msec"
+          ],
+          "fullParams": [],
+          "module": "",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls86af_vzutko",
+          "name": "set_target_ice_harvest_time",
+          "displayName": "设置目标脱冰时间",
+          "returns": false,
+          "colour": 210,
+          "params": [
+            "time_msec"
+          ],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmls9aum_kieysf",
+          "name": "stir_motor_once",
+          "displayName": "同步电机立即搅拌一次",
+          "returns": false,
+          "colour": 210,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsay4f_yh2zza",
+          "name": "get_cool_func_switch",
+          "displayName": "获取制冷功能开关状态",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsbv5g_jequ56",
+          "name": "get_ice_func_switch",
+          "displayName": "获取制冰功能开关状态",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsczzg_qd7wnl",
+          "name": "get_ice_out_switch",
+          "displayName": "获取出冰开关状态",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsekz8_4ajtty",
+          "name": "get_ice_type_switch",
+          "displayName": "获取冰块类型选择状态",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsfw4z_g9xlv3",
+          "name": "get_cool_water_box_high_switch",
+          "displayName": "获取冷水箱高水位开关状态",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsgyje_b3ee7m",
+          "name": "get_ambient_temp",
+          "displayName": "获取环境温度",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlshrbu_kq9sxf",
+          "name": "get_cool_water_temp",
+          "displayName": "获取冷水温度",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsiqyx_440lz6",
+          "name": "get_evaporator_temp",
+          "displayName": "获取蒸发器温度",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlskdft_hpvtys",
+          "name": "get_ice_full_state",
+          "displayName": "获取满冰状态",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlslr5k_szlhrl",
+          "name": "get_ice_making_timer",
+          "displayName": "获取制冰运行时间",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsmp9t_hqlhho",
+          "name": "get_harvesting_timer",
+          "displayName": "获取脱冰运行时间",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsnin4_c7zcsu",
+          "name": "get_target_ice_making_time",
+          "displayName": "获取目标制冰时间",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        },
+        {
+          "id": "fn_mmlsoa6g_df5zka",
+          "name": "get_target_ice_harvest_time",
+          "displayName": "获取目标脱冰时间",
+          "returns": true,
+          "colour": 140,
+          "params": [],
+          "fullParams": [],
+          "module": "ice",
+          "toolboxSnippet": ""
+        }
+      ]
+    }
+  ]
+}
