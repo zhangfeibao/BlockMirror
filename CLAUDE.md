@@ -18,6 +18,19 @@ If you encounter `Error: error:0308010C:digital envelope routines::unsupported`,
 export NODE_OPTIONS=--openssl-legacy-provider
 ```
 
+### node-pty Native Module
+
+`node-pty` is a native C++ module used for terminal PTY support. After `npm install`, it must be rebuilt for Electron's Node.js version:
+
+```bash
+# On Windows with Git Bash / MSYS2, disable path conversion to prevent /MP flag mangling:
+MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL="*" npx electron-rebuild -f -w node-pty
+```
+
+**Known issues:**
+- Requires Visual Studio Build Tools (C++ workload). node-gyp may not recognize VS 2026 (v18) — you may need to patch `node_modules/node-gyp/lib/find-visualstudio.js` to add `versionYear: 2026` mapping and toolset version.
+- If you get `MSB8040: Spectre-mitigated libraries are required`, edit `node_modules/node-pty/binding.gyp` and `node_modules/node-pty/deps/winpty/src/winpty.gyp` to change `'SpectreMitigation': 'Spectre'` to `'SpectreMitigation': 'false'`, then rebuild.
+
 Build output goes to `dist/`:
 - `dist/block_mirror.js` — main library (BlockMirror + AST handlers, no Blockly/CodeMirror)
 - `dist/skulpt_parser.js` — bundled Skulpt Python parser
@@ -76,7 +89,7 @@ The Electron app (`npm run electron:start`) adds Python code execution and an in
 ```
 Renderer Process (test/simple_v2.html)
   ├── BlockMirror editor (Blockly + CodeMirror)
-  ├── xterm.js terminal panel (resizable, draggable)
+  ├── xterm.js terminal panel (node-pty, resizable, draggable)
   ├── Run/Stop button → editor.getCode() → electronAPI.runPython(filePath)
   ├── ramgs toolbar (生成/加载/连接) + status bar
   └── window.electronAPI  ← exposed via contextBridge
@@ -84,15 +97,17 @@ Renderer Process (test/simple_v2.html)
 Main Process (electron/main.js)
   ├── python:run  → spawn('python', ['-u', filePath], {cwd: dirname(filePath)})
   ├── python:kill → taskkill (Win32) / SIGTERM
-  ├── shell:start → spawn('powershell.exe' / 'bash')
+  ├── shell:start → node-pty spawn('powershell.exe' / 'bash') with embedded Python in PATH
+  ├── pty:spawn   → node-pty for advanced terminal window
   ├── file:open/save/saveAs/exportPng/confirmSave → dialog + fs
   ├── window:setTitle / window:forceClose → BrowserWindow control
   ├── blockfactory:open → opens blockfactory/ in a new BrowserWindow
+  ├── advanced-terminal:open → opens advanced-terminal/ in a new BrowserWindow
   ├── custom-modules:* → Custom modules CRUD + manager window
   └── ramgs:* → MCU debugging tool (serial connect, symbol management)
 ```
 
-**`electron/main.js`** — Main process. Manages `pythonProcess`, `shellProcess`, `blockFactoryWindow`, `moduleManagerWindow`, and `customModulesStore`. Streams stdout/stderr via `terminal:output` IPC. Menu items send `menu:command` events to the renderer; the renderer's `initMenuCommands()` dispatches them to handler functions.
+**`electron/main.js`** — Main process. Manages `pythonProcess`, `panelPtyProcess` (main window terminal), `ptyProcess` (advanced terminal window), `blockFactoryWindow`, `advancedTerminalWindow`, `moduleManagerWindow`, and `customModulesStore`. Streams stdout/stderr via `terminal:output` IPC. Menu items send `menu:command` events to the renderer; the renderer's `initMenuCommands()` dispatches them to handler functions.
 
 **`electron/preload.js`** — Bridges main ↔ renderer via `contextBridge.exposeInMainWorld('electronAPI', ...)`. All `on*` listener methods return a cleanup/unsubscribe function.
 
@@ -102,9 +117,9 @@ Main Process (electron/main.js)
 |-----------|---------|---------|
 | renderer → main (invoke) | `python:run` | Execute Python file at path (cwd = file's directory) |
 | renderer → main (invoke) | `python:kill` | Kill running Python process |
-| renderer → main (invoke) | `shell:start` | Start persistent shell |
-| renderer → main (send) | `shell:write` | Send keystrokes to shell stdin |
-| renderer → main (send) | `terminal:resize` | Reserved for node-pty upgrade |
+| renderer → main (invoke) | `shell:start` | Start persistent PTY shell (node-pty) |
+| renderer → main (send) | `shell:write` | Send keystrokes directly to PTY |
+| renderer → main (send) | `terminal:resize` | Resize panel PTY (cols, rows) |
 | renderer → main (invoke) | `file:open` | Open file dialog → `{canceled, filePath, content}` |
 | renderer → main (invoke) | `file:save` | Save `{filePath, content}` |
 | renderer → main (invoke) | `file:saveAs` | Save-as dialog → `{canceled, filePath}` |
@@ -133,24 +148,46 @@ Main Process (electron/main.js)
 | renderer → main (invoke) | `ramgs:selectElf` | File dialog for `.elf/.abs/.axf/.out` |
 | renderer → main (invoke) | `ramgs:selectSymbols` | File dialog for `.json` |
 | renderer → main (invoke) | `ramgs:selectOutputDir` | Directory selection dialog |
+| renderer → main (send) | `advanced-terminal:open` | Open/focus advanced terminal window |
+| renderer → main (invoke) | `pty:spawn` | Spawn PTY process in advanced terminal |
+| renderer → main (send) | `pty:write` | Send keystrokes to advanced terminal PTY |
+| renderer → main (send) | `pty:resize` | Resize advanced terminal PTY (cols, rows) |
+| renderer → main (send) | `clipboard:write` | Write text to system clipboard |
 | main → renderer | `terminal:output` | Streamed stdout/stderr text |
 | main → renderer | `process:exit` | Process exit with `{exitCode, source}` |
 | main → renderer | `process:start` | Process started with `{source}` |
 | main → renderer | `menu:command` | Native menu item clicked (e.g. `'file:new'`, `'view:split'`, `'tools:moduleManager'`) |
 | main → renderer | `custom-modules:reload` | Push updated modules data to renderer |
+| main → adv-terminal | `pty:data` | PTY output data for advanced terminal |
+| main → adv-terminal | `pty:exit` | PTY process exited with `{exitCode}` |
 
 ### Python Execution
 
 Python code is executed by saving to a temp file (or using the current file path) and running `spawn('python', ['-u', filePath], { cwd: dirname(filePath) })`. The working directory is set to the file's parent directory so relative imports and file paths work correctly. Stderr output is wrapped in ANSI red escape codes for terminal display.
 
-### Terminal Shell Interaction (no PTY)
+### Terminal (node-pty)
 
-The shell is spawned without a PTY (`child_process.spawn`, not `node-pty`) to avoid native compilation. This means:
-- The shell does **not** echo characters back to the terminal
-- Input must be **line-buffered** in the renderer: characters are locally echoed via `term.write(data)`, accumulated in `shellInputBuffer`, and sent to shell stdin only on `Enter` (`\r`)
-- Backspace, Ctrl+C are handled client-side before forwarding
+Both the main window terminal panel and the advanced terminal window use `node-pty` for true PTY support. This provides:
+- Shell echoes characters (no client-side line buffering needed)
+- Tab completion, interactive programs (python REPL, vim, etc.)
+- ANSI escape sequences, colors, cursor movement
+- True terminal resize via `ptyProcess.resize(cols, rows)`
 
-The `terminal:resize` IPC channel is a no-op stub; upgrade to `node-pty` to enable true PTY resize support.
+**Panel terminal** (`panelPtyProcess` in main.js): spawned via `shell:start` IPC, output streamed via `terminal:output` channel to the main window. Shares the terminal display with Python execution output. Input forwarded directly via `shell:write`.
+
+**Advanced terminal** (`ptyProcess` in main.js): spawned via `pty:spawn` IPC in a separate `BrowserWindow` (`advanced-terminal/terminal.html`). Uses dedicated `pty:data`/`pty:exit` channels to its own window.
+
+Both PTY shells are spawned with:
+- `-NoProfile -NoLogo` (PowerShell) or `--norc --noprofile` (bash) to prevent user profile from overriding PATH
+- Embedded Python directory prepended to PATH (resolves the correct `pathKey` case-insensitively on Windows where `Path` ≠ `PATH`)
+- `PYTHONHOME` and `PYTHONPATH` removed from environment
+
+**Copy/Paste** in both terminals:
+- `Ctrl+Shift+C` — copy selection to clipboard
+- `Ctrl+Shift+V` — paste from clipboard
+- Mouse select — auto-copy to clipboard
+- Right-click — paste from clipboard
+- Clipboard write goes through `clipboard:write` IPC to main process (preload `clipboard.writeText()` doesn't work reliably)
 
 ### Menu Command Flow
 
@@ -163,6 +200,10 @@ The toolbar buttons in `simple_v2.html` call the same handler functions directly
 ### BlockFactory Window
 
 `blockfactory/` is a self-contained copy of Google's Blockly Developer Tools for creating custom block definitions. It is opened as a child `BrowserWindow` (no menu bar, `setMenu(null)`) via the `blockfactory:open` IPC channel. The window carries its own copies of Blockly in `blockfactory/dist/` and `blockfactory/build/`. Its `beforeunload` hook is suppressed via `webContents.on('will-prevent-unload', e => e.preventDefault())` so the close button works normally.
+
+### Advanced Terminal Window
+
+`advanced-terminal/` provides a full-featured standalone terminal window using node-pty + xterm.js. Opened via `advanced-terminal:open` IPC or the menu item (Tools → 高级终端, `Ctrl+Shift+T`). Uses its own preload script (`terminal-preload.js`) exposing `terminalAPI` with clipboard support via `clipboard:write` IPC to main process. The PTY process (`ptyProcess`) is killed when the window closes.
 
 ### Custom Modules Management System
 
@@ -318,9 +359,9 @@ npm run pack:win   # produces release/win-unpacked/MideaBlockly.exe
 ```
 
 Key design:
-- **`files`** — app code packed into asar: `electron/`, `test/simple_v2.html`, `dist/`, `lib/`, `blockfactory/`, `custom-modules/`, and runtime `node_modules` (blockly, @blockly, @xterm)
+- **`files`** — app code packed into asar: `electron/`, `test/simple_v2.html`, `dist/`, `lib/`, `blockfactory/`, `custom-modules/`, `advanced-terminal/`, and runtime `node_modules` (blockly, @blockly, @xterm)
 - **`extraResources`** — large external tools copied outside asar to `resources/`: `python-embedded/`, `ramgs/`, `VSCode/`, `device_api/`
-- **`asarUnpack`** — `node_modules/blockly/media/**/*` must be unpacked so Blockly can access media files by filesystem path
+- **`asarUnpack`** — `node_modules/blockly/media/**/*` (Blockly media files) and `node_modules/node-pty/**/*` (native `.node` binaries cannot load from asar) must be unpacked
 - **`target: "dir"`** — outputs unpacked directory; change to `"nsis"` for an installer
 
 ## Dev vs Packaged Path Resolution
@@ -328,7 +369,7 @@ Key design:
 `electron/main.js` uses a dual-path pattern for all external tools. In development, paths resolve relative to `__dirname/..`; in packaged mode, they resolve via `process.resourcesPath`:
 
 ```javascript
-// Pattern used by getEmbeddedPythonPath(), getVscodeExePath(), getDeviceApiDir(), ensureRamgsInPath()
+// Pattern used by getEmbeddedPythonPath(), getEmbeddedPythonDir(), getVscodeExePath(), getDeviceApiDir()
 const devPath = path.join(__dirname, '..', 'tool-dir', 'executable');
 const prodPath = path.join(process.resourcesPath || '', 'tool-dir', 'executable');
 if (fs.existsSync(prodPath)) return prodPath;
@@ -339,6 +380,8 @@ return 'fallback';
 When adding new external tools, follow this pattern and add the directory to `extraResources` in `package.json`.
 
 Python execution also calls `buildPythonEnv()` which strips `PYTHONHOME` and `PYTHONPATH` from the environment to prevent system Python from interfering with the embedded runtime.
+
+**Windows PATH key case**: When modifying `PATH` in a cloned `process.env`, the key is typically `Path` (not `PATH`) on Windows. Always find the correct key case-insensitively: `Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH'`.
 
 ## VS Code Integration
 
