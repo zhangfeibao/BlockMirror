@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require('electron');
+const { contextBridge, ipcRenderer, clipboard } = require('electron');
 
 contextBridge.exposeInMainWorld('electronAPI', {
     // Python 执行
@@ -60,6 +60,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
     // Advanced Terminal
     openAdvancedTerminal: () => ipcRenderer.send('advanced-terminal:open'),
+
+    // Clipboard
+    clipboardRead: () => clipboard.readText(),
+    clipboardWrite: (text) => ipcRenderer.send('clipboard:write', text),
 
     // 主进程 → 渲染进程 事件监听（返回取消函数）
     onOutput: (callback) => {

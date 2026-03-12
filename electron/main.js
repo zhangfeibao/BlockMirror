@@ -9,7 +9,7 @@ const { AiConversationsStore } = require('./ai-conversations-store');
 
 let mainWindow = null;
 let pythonProcess = null;
-let shellProcess = null;
+let panelPtyProcess = null;
 let blockFactoryWindow = null;
 let moduleManagerWindow = null;
 let advancedTerminalWindow = null;
@@ -113,31 +113,51 @@ ipcMain.handle('python:kill', async () => {
     return { success: true };
 });
 
-// 持久 Shell（PowerShell / bash）
+// 面板终端 PTY（PowerShell / bash）
 ipcMain.handle('shell:start', async () => {
-    if (shellProcess) return { success: true };
-    const cmd = process.platform === 'win32' ? 'powershell.exe' : 'bash';
-    const args = process.platform === 'win32' ? ['-NoLogo'] : [];
+    const pty = require('node-pty');
+    if (panelPtyProcess) return { success: true };
 
-    shellProcess = spawn(cmd, args, { env: { ...process.env } });
+    const shell = process.platform === 'win32' ? 'powershell.exe' : 'bash';
+    const shellArgs = process.platform === 'win32' ? ['-NoProfile', '-NoLogo'] : ['--norc', '--noprofile'];
+    const env = { ...process.env };
+    delete env.PYTHONHOME;
+    delete env.PYTHONPATH;
+
+    const pythonDir = getEmbeddedPythonDir();
+    if (pythonDir) {
+        const scriptsDir = path.join(pythonDir, 'Scripts');
+        const sep = process.platform === 'win32' ? ';' : ':';
+        const pathKey = Object.keys(env).find(k => k.toLowerCase() === 'path') || 'PATH';
+        env[pathKey] = pythonDir + sep + scriptsDir + sep + (env[pathKey] || '');
+    }
+
+    panelPtyProcess = pty.spawn(shell, shellArgs, {
+        name: 'xterm-256color',
+        cols: 80,
+        rows: 24,
+        cwd: process.env.USERPROFILE || process.env.HOME,
+        env: env,
+    });
+
     sendToRenderer('process:start', { source: 'shell' });
 
-    shellProcess.stdout.on('data', (d) => sendToRenderer('terminal:output', d.toString()));
-    shellProcess.stderr.on('data', (d) =>
-        sendToRenderer('terminal:output', `\x1b[31m${d.toString()}\x1b[0m`));
-    shellProcess.on('close', (exitCode) => {
-        shellProcess = null;
+    panelPtyProcess.onData((data) => {
+        sendToRenderer('terminal:output', data);
+    });
+    panelPtyProcess.onExit(({ exitCode }) => {
+        panelPtyProcess = null;
         sendToRenderer('process:exit', { exitCode, source: 'shell' });
     });
     return { success: true };
 });
 
 ipcMain.on('shell:write', (_, data) => {
-    if (shellProcess && shellProcess.stdin.writable) shellProcess.stdin.write(data);
+    if (panelPtyProcess) panelPtyProcess.write(data);
 });
 
 ipcMain.on('terminal:resize', (_, { cols, rows }) => {
-    // 预留接口，node-pty 升级时启用：ptyProcess.resize(cols, rows)
+    if (panelPtyProcess) panelPtyProcess.resize(cols, rows);
 });
 
 // ── 文件系统 IPC ──
@@ -821,7 +841,7 @@ function createWindow() {
 
     mainWindow.on('closed', () => {
         if (pythonProcess) pythonProcess.kill();
-        if (shellProcess) shellProcess.kill();
+        if (panelPtyProcess) { panelPtyProcess.kill(); panelPtyProcess = null; }
         if (ptyProcess) { ptyProcess.kill(); ptyProcess = null; }
         if (advancedTerminalWindow && !advancedTerminalWindow.isDestroyed()) advancedTerminalWindow.close();
         mainWindow = null;

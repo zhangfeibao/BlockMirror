@@ -1254,7 +1254,6 @@
                 selectionBackground: '#264f78',
             },
             scrollback: 5000,
-            convertEol: true,
             cursorBlink: true,
         });
         fitAddon = new FitAddon.FitAddon();
@@ -1262,36 +1261,47 @@
         term.open(document.getElementById('xterm-container'));
         fitAddon.fit();
 
-        // 本地行缓冲 + 回显
-        // spawn 无 PTY，Shell 不会回显输入、不会响应逐字节写入；
-        // 需在 xterm.js 侧做本地回显，按 Enter 后再整行发给 Shell。
-        var shellInputBuffer = '';
+        // PTY 模式：直接转发输入，无需行缓冲
         term.onData(function(data) {
-            if (data === '\r') {
-                // Enter：回显换行，整行发给 Shell
-                term.write('\r\n');
-                window.electronAPI.writeToShell(shellInputBuffer + '\n');
-                shellInputBuffer = '';
-            } else if (data === '\x7f' || data === '\b') {
-                // Backspace：删除缓冲末字符并更新显示
-                if (shellInputBuffer.length > 0) {
-                    shellInputBuffer = shellInputBuffer.slice(0, -1);
-                    term.write('\b \b');
-                }
-            } else if (data === '\x03') {
-                // Ctrl+C：转发中断信号
-                window.electronAPI.writeToShell('\x03');
-                term.write('^C\r\n');
-                shellInputBuffer = '';
-            } else if (data.charCodeAt(0) >= 32) {
-                // 可打印字符：本地回显并加入缓冲
-                shellInputBuffer += data;
-                term.write(data);
+            window.electronAPI.writeToShell(data);
+        });
+
+        // Copy/Paste: Ctrl+Shift+C = copy, Ctrl+Shift+V = paste
+        term.attachCustomKeyEventHandler(function(ev) {
+            if (ev.type !== 'keydown') return true;
+            if (ev.ctrlKey && ev.shiftKey && ev.code === 'KeyC') {
+                var sel = term.getSelection();
+                if (sel) window.electronAPI.clipboardWrite(sel);
+                return false;
             }
+            if (ev.ctrlKey && ev.shiftKey && ev.code === 'KeyV') {
+                var text = window.electronAPI.clipboardRead();
+                if (text) window.electronAPI.writeToShell(text);
+                return false;
+            }
+            return true;
+        });
+
+        // 鼠标选中自动复制
+        term.onSelectionChange(function() {
+            var sel = term.getSelection();
+            if (sel) window.electronAPI.clipboardWrite(sel);
+        });
+
+        // 右键粘贴
+        document.getElementById('xterm-container').addEventListener('contextmenu', function(ev) {
+            ev.preventDefault();
+            var text = window.electronAPI.clipboardRead();
+            if (text) window.electronAPI.writeToShell(text);
         });
 
         // 主进程输出 → 终端显示
         window.electronAPI.onOutput(function(data) { term.write(data); });
+
+        // 终端尺寸变化 → 通知 PTY
+        term.onResize(function(size) {
+            window.electronAPI.resizeTerminal(size.cols, size.rows);
+        });
 
         // 进程退出处理
         window.electronAPI.onProcessExit(function(info) {
