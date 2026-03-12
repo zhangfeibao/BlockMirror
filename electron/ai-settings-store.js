@@ -39,7 +39,7 @@ class AiSettingsStore {
 
     _defaults() {
         return {
-            authToken: '',
+            authToken: 'msk-480ffe4f47a434e3b657c3ba7b009c908223c484b79e8905fd1d89b282b29281',
             aigcUser: '',
             model: 'gpt-5',
             effort: 'medium',
